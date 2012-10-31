@@ -22,6 +22,7 @@
  */
 package com.ggvaidya.TaxonValid.Cmdline;
 
+import java.io.*;
 import org.apache.commons.cli.*;
 
 import com.ggvaidya.TaxonValid.*;
@@ -55,14 +56,38 @@ public class CmdController {
 			System.err.println();
 			System.exit(0);
 		}
+		
+		/* If all else fails, process the names provided on the command line */
+		processNames(new InputStreamReader(System.in));
 	}
 
 	private static void setupOptions(Options cmdLineOptions) {
+		/** -v, --version: Display version information */
 		cmdLineOptions.addOption(
+			"v",
 			"version", 
 			false, 
 			"Display version information for this software"
 		);
 	}
 	
+	private static void processNames(Reader names) {
+		LineNumberReader reader = new LineNumberReader(names);
+		
+		while(true) {
+			String line;
+			try {
+				line = reader.readLine();
+				if(line == null)
+					return;
+			} catch(EOFException e) {
+				break;
+			} catch(IOException e) {
+				System.err.println("Unable to read input: " + e);
+				return;
+			}
+			String name = line.trim();
+			System.err.println("Name: " + name);
+		}
+	}
 }
