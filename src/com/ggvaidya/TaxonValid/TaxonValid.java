@@ -32,7 +32,7 @@ import com.ggvaidya.TaxonValid.Cmdline.*;
 public class TaxonValid {
 	
 	public static void main(String[] args) {
-		CmdController.main(args);
+		CmdController.handle(args);
 	}
 
 	public static String getName() {
@@ -44,7 +44,7 @@ public class TaxonValid {
 	}
 	
 	public static String getDescription() {
-		return "A basic taxon validator";
+		return "A basic taxon name validator";
 	}
 	
 	public static String getCopyright() {

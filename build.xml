@@ -71,4 +71,10 @@
     nbproject/build-impl.xml file. 
 
     -->
+    <target name="-post-jar">
+        <copy file="./dist/TaxonValid.jar" todir="./releases/build/MacOSX/TaxonValid.app/Contents/Resources/Java" />
+        <copy todir="./releases/build/MacOSX/TaxonValid.app/Contents/Resources/Java/lib">
+            <fileset dir="./dist/lib" />
+        </copy>
+    </target>
 </project>

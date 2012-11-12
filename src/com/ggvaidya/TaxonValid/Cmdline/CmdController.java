@@ -22,10 +22,10 @@
  */
 package com.ggvaidya.TaxonValid.Cmdline;
 
+import com.ggvaidya.TaxonValid.*;
+import com.ggvaidya.TaxonValid.UI.*;
 import java.io.*;
 import org.apache.commons.cli.*;
-
-import com.ggvaidya.TaxonValid.*;
 
 /**
  * The CmdLine Controller class handles command line instructions to
@@ -35,7 +35,7 @@ import com.ggvaidya.TaxonValid.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class CmdController {
-	public static void main(String[] args) {
+	public static void handle(String[] args) {
 		Options cmdLineOptions = new Options();
 		setupOptions(cmdLineOptions);
 		
@@ -58,7 +58,8 @@ public class CmdController {
 		}
 		
 		/* If all else fails, process the names provided on the command line */
-		processNames(new InputStreamReader(System.in));
+		// processNames(new InputStreamReader(System.in));
+		MainFrame mf = new MainFrame();
 	}
 
 	private static void setupOptions(Options cmdLineOptions) {
