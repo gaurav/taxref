@@ -182,10 +182,11 @@ public class CmdController {
 			if(nl.hasName(name)) {
 				count_valid++;
 				// System.out.println(name + "\tvalid");
+				writer.writeNext(line);
 			} else {
 				count_invalid++;
 				// System.out.println(name + "\tinvalid");
-				writer.writeNext(line);
+				//writer.writeNext(line);
 			}
 		}
 		
