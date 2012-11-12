@@ -23,6 +23,8 @@
 
 package com.ggvaidya.TaxonValid.Model;
 
+import java.util.*;
+
 /**
  * A namelist is a list of names.
  * 
@@ -33,5 +35,34 @@ package com.ggvaidya.TaxonValid.Model;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class NameList {
+	private ArrayList<String> all_names = new ArrayList<String>();
+	private HashSet<String> indexed_names = new HashSet<String>();
+	private boolean all_names_modified = false;
 	
+	public NameList() {
+	}
+	
+	public void addName(String name) {
+		all_names.add(name);
+		all_names_modified = true;
+	}
+	
+	public void addNames(List<String> names) {
+		all_names.addAll(names);
+		all_names_modified = true;
+	}
+	
+	public int count() {
+		return all_names.size();
+	}
+	
+	public boolean hasName(String name) {
+		if(all_names_modified) {
+			System.err.println("Reindexing NameList containing " + count() + " names.");
+			indexed_names.addAll(all_names);
+			all_names_modified = false;
+		}
+		
+		return indexed_names.contains(name);
+	}
 }
