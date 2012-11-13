@@ -61,6 +61,11 @@ public class CmdController {
 		
 		boolean case_sensitive = (cmd.getOptionValue("case") == null) ? false : true;
 		
+		MainFrame mf = new MainFrame();
+	}
+	
+	private static void exitedCode(boolean case_sensitive, CommandLine cmd, CommandLineParser parser) {
+		
 		System.err.println("Case sensitive: " + case_sensitive);
 		
 		NameList nl = new NameList();
@@ -98,7 +103,6 @@ public class CmdController {
 			field = Integer.valueOf(s_field).intValue();
 		
 		processCSVNames(new InputStreamReader(System.in), field, nl, case_sensitive);
-		// MainFrame mf = new MainFrame();
 	}
 
 	private static void setupOptions(Options cmdLineOptions) {
