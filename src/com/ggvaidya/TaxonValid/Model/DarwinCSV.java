@@ -26,6 +26,8 @@ package com.ggvaidya.TaxonValid.Model;
 import au.com.bytecode.opencsv.*;
 import java.io.*;
 import java.util.*;
+import javax.swing.event.*;
+import javax.swing.table.*;
 import org.apache.commons.lang3.*;
 
 /**
@@ -37,7 +39,7 @@ import org.apache.commons.lang3.*;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class DarwinCSV {
+public class DarwinCSV implements TableModel {
 	private char separator = ',';
 	private char quotechar = '"';
 	
@@ -152,20 +154,62 @@ public class DarwinCSV {
 		return data.get(row);
 	}
 	
-	public int colcount() {
-		return columns.length;
-	}
-	
-	public int rowcount() {
-		return data.size();
-	}
-	
 	public int col_scientificname() {
 		return col_scientificname;
 	}
 	
 	public int col_canonicalname() {
 		return col_canonicalname;
+	}
+
+	@Override
+	public int getRowCount() {
+		return data.size();
+	}
+
+	@Override
+	public int getColumnCount() {
+		return columns.length;
+	}
+
+	@Override
+	public String getColumnName(int columnIndex) {
+		return columns[columnIndex];
+	}
+
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		return String.class;
+	}
+
+	@Override
+	public boolean isCellEditable(int rowIndex, int columnIndex) {
+		return true;
+	}
+
+	@Override
+	public Object getValueAt(int rowIndex, int columnIndex) {
+		return data.get(rowIndex)[columnIndex];
+	}
+
+	@Override
+	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		data.get(rowIndex)[columnIndex] = (String) aValue;
+		for(TableModelListener tmi: tmiList) {
+			tmi.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex, TableModelEvent.UPDATE));
+		}
+	}
+
+	private ArrayList<TableModelListener> tmiList = new ArrayList<TableModelListener>();
+	
+	@Override
+	public void addTableModelListener(TableModelListener l) {
+		tmiList.add(l);
+	}
+
+	@Override
+	public void removeTableModelListener(TableModelListener l) {
+		tmiList.remove(l);
 	}
 	
 }
