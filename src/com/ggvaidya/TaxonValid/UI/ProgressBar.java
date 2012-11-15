@@ -31,6 +31,7 @@
 
 package com.ggvaidya.TaxonValid.UI;
 
+import com.ggvaidya.TaxonValid.Common.*;
 import java.awt.*;
 
 public class ProgressBar extends Canvas implements DelayCallback {	

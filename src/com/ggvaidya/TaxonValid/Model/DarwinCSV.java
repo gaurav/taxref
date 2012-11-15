@@ -24,11 +24,16 @@
 package com.ggvaidya.TaxonValid.Model;
 
 import au.com.bytecode.opencsv.*;
+import com.sun.media.jai.codec.PNGEncodeParam;
+import java.awt.Component;
+import java.awt.Color;
 import java.io.*;
 import java.util.*;
+import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import org.apache.commons.lang3.*;
+import sun.swing.table.DefaultTableCellHeaderRenderer;
 
 /**
  * A DarwinCSV is a CSV file with unique, non-repeating column names.
@@ -39,16 +44,19 @@ import org.apache.commons.lang3.*;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class DarwinCSV implements TableModel {
+public class DarwinCSV implements TableModel, TableCellRenderer {
 	private char separator = ',';
 	private char quotechar = '"';
 	
 	private HashMap<String, Integer> columnNames;
 	private String[] columns;
 	private List<String[]> data;
+	private HashSet<String> names = new HashSet<String>();
 	
 	private int col_scientificname = -1;
 	private int col_canonicalname = -1;
+	private int col_family = -1;
+	private int col_acceptedname = -1;
 	
 	public static final int FILE_CSV_DELIMITED = 0;
 	public static final int FILE_TAB_DELIMITED = 1;
@@ -104,6 +112,7 @@ public class DarwinCSV implements TableModel {
 		checkColumns();
 		
 		data = csvr.readAll();
+		indexNames();
 	}
 	
 	private void checkColumns() throws IOException {
@@ -123,6 +132,17 @@ public class DarwinCSV implements TableModel {
 		// 2. See if we can identify any scientific names.
 		col_canonicalname = column("canonicalname", "canonicalName", "canonical_name");
 		col_scientificname = column("scientificname", "scientificName", "scientific_name");
+		col_acceptedname = column("acceptedNameUsageId", "AcceptedNameUsageId", "AcceptedNameUsageID", "acceptedName", "acceptedname", "accepted_name");
+		col_family = column("family", "Family");
+	}
+	
+	private void indexNames() {
+		if(col_scientificname > -1) {
+			names.clear();
+			for(String[] row: data) {
+				names.add(row[col_scientificname].toLowerCase());
+			}
+		}
 	}
 	
 	public List<String> columns() {
@@ -131,7 +151,7 @@ public class DarwinCSV implements TableModel {
 	
 	public int column(String colName) {
 		Integer i = columnNames.get(colName);
-		if(i == null)
+		if(i != null)
 			return i.intValue();
 		else
 			return -1;
@@ -210,6 +230,42 @@ public class DarwinCSV implements TableModel {
 	@Override
 	public void removeTableModelListener(TableModelListener l) {
 		tmiList.remove(l);
+	}
+
+	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellHeaderRenderer();
+	
+	@Override
+	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+		
+		if(column == col_family || column == col_scientificname || column == col_acceptedname) {
+			if(matcher == null) {
+				c.setBackground(new Color(137, 207, 230));
+			} else {
+				String str = (String) value;
+		
+				if(matcher.hasName(str)) {
+					c.setBackground(new Color(0, 128, 0));
+				} else {
+					c.setBackground(new Color(226, 6, 44));
+				}
+			}
+		}
+		
+		
+		return c;
+	}
+
+	private DarwinCSV matcher = null;
+	public void match(DarwinCSV csv_matcher) {
+		matcher = csv_matcher;
+		for(TableModelListener tmi: tmiList) {
+			tmi.tableChanged(new TableModelEvent(this, 0, getRowCount()));
+		}
+	}
+
+	public boolean hasName(String str) {
+		return names.contains(str.toLowerCase());
 	}
 	
 }
