@@ -32,7 +32,6 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import org.apache.commons.lang3.*;
-import sun.swing.table.DefaultTableCellHeaderRenderer;
 import java.util.regex.*;
 
 /**
@@ -237,7 +236,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	}
 	
 	public int column(String colName) {
-		Integer i = columnNames.get(colName);
+		Integer i = columnNames_caseInsensitive.get(colName);
 		if(i != null)
 			return i.intValue();
 		else
@@ -320,12 +319,14 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		tmiList.remove(l);
 	}
 
-	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellHeaderRenderer();
+	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellRenderer();
 	
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 		
+                c.setBackground(Color.WHITE);
+                
 		if(column == col_family || column == col_scientificname || column == col_acceptedname || column == col_canonicalname) {
 			String str = (String) value;
 			
