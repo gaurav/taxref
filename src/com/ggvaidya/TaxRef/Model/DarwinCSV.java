@@ -24,7 +24,6 @@
 package com.ggvaidya.TaxRef.Model;
 
 import au.com.bytecode.opencsv.*;
-import com.sun.media.jai.codec.PNGEncodeParam;
 import java.awt.Component;
 import java.awt.Color;
 import java.io.*;
@@ -34,6 +33,7 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 import org.apache.commons.lang3.*;
 import sun.swing.table.DefaultTableCellHeaderRenderer;
+import java.util.regex.*;
 
 /**
  * A DarwinCSV is a CSV file with unique, non-repeating column names.
@@ -49,7 +49,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	private char quotechar = '"';
 	
 	private HashMap<String, Integer> columnNames;
-	private String[] columns;
+	private List<String> columns;
 	private List<String[]> data;
 	private HashSet<String> names = new HashSet<String>();
 	
@@ -108,7 +108,8 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		}
 		
 		CSVReader csvr = new CSVReader(new BufferedReader(new FileReader(file)));
-		columns = csvr.readNext();
+		columns = new ArrayList<String>();
+		columns.addAll(Arrays.asList(csvr.readNext()));
 		checkColumns();
 		
 		data = csvr.readAll();
@@ -117,7 +118,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	
 	private void checkColumns() throws IOException {
 		// 1. All columns must be unique.
-		columnNames = new HashMap<String, Integer>(columns.length);
+		columnNames = new HashMap<String, Integer>(columns.size());
 		
 		int x = 0;
 		for(String colName: columns) {
@@ -125,7 +126,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			x++;
 		}
 		
-		if(columnNames.size() < columns.length) {
+		if(columnNames.size() < columns.size()) {
 			throw new IOException("Duplicate column names: " + StringUtils.join(columnNames, ", "));
 		}
 		
@@ -137,16 +138,58 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	}
 	
 	private void indexNames() {
-		if(col_scientificname > -1) {
-			names.clear();
-			for(String[] row: data) {
-				names.add(row[col_scientificname].toLowerCase());
+		if(col_canonicalname < 0) {
+			// If there is no canonical name, create one.
+			
+			if(col_scientificname >= 0) {
+				// Parse a canonical name out of a scientific name.
+				Pattern p_canonical = Pattern.compile("^([A-Z][a-z]+\\s+[a-z]+)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
+				Pattern p_monomial = Pattern.compile("^([A-Z][a-z]+)\\b");
+				
+				List<String[]> new_data = new ArrayList<String[]>();
+				
+				for(String[] row: data) {
+					String[] new_row = new String[row.length + 1];
+					System.arraycopy(row, 0, new_row, 0, row.length);
+					
+					Matcher m = p_canonical.matcher(row[col_scientificname]);
+					// System.err.println(m.find() + " between '" + row[col_scientificname] + "' and '" + p_canonical + "'");
+					if(m.lookingAt()) {
+						new_row[row.length] = m.group(1);
+					} else {
+						m = p_monomial.matcher(row[col_scientificname]);
+						if(m.lookingAt()) {
+							new_row[row.length] = m.group(1);
+						} else {
+							new_row[row.length] = "";
+						}
+					}
+					
+					new_data.add(new_row);
+				}
+				
+				columns.add("canonicalName");
+				col_canonicalname = columns.size() - 1;
+				data = new_data;
 			}
+		}
+		
+		// Choose a name to index.
+		int col_name = -1;
+		if(col_canonicalname >= 0) {
+			col_name = col_canonicalname;
+		} else if(col_scientificname >= 0) {
+			col_name = col_scientificname;
+		}
+		
+		names.clear();
+		for(String[] row: data) {
+			names.add(row[col_name].toLowerCase());
 		}
 	}
 	
 	public List<String> columns() {
-		return Arrays.asList(columns);
+		return columns;
 	}
 	
 	public int column(String colName) {
@@ -189,12 +232,12 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 
 	@Override
 	public int getColumnCount() {
-		return columns.length;
+		return columns.size();
 	}
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		return columns[columnIndex];
+		return columns.get(columnIndex);
 	}
 
 	@Override
@@ -238,20 +281,25 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 		
-		if(column == col_family || column == col_scientificname || column == col_acceptedname) {
+		if(column == col_family || column == col_scientificname || column == col_acceptedname || column == col_canonicalname) {
+			String str = (String) value;
+			
 			if(matcher == null) {
-				c.setBackground(new Color(137, 207, 230));
+				if(str.length() == 0) {
+					c.setBackground(Color.GRAY);
+				} else {
+					c.setBackground(new Color(137, 207, 230));
+				}
 			} else {
-				String str = (String) value;
-		
-				if(matcher.hasName(str)) {
+				if(str.length() == 0) {
+					c.setBackground(Color.GRAY);
+				} else if(matcher.hasName(str)) {
 					c.setBackground(new Color(0, 128, 0));
 				} else {
 					c.setBackground(new Color(226, 6, 44));
 				}
 			}
 		}
-		
 		
 		return c;
 	}
@@ -277,7 +325,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			throw new UnsupportedOperationException("File type " + type + " not yet supported!");
 		}
 		
-		writer.writeNext(columns);
+		writer.writeNext((String[]) columns.toArray());
 		writer.writeAll(data);
 		writer.close();
 	}
