@@ -110,7 +110,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			separator = ';';
 		}
 		
-		CSVReader csvr = new CSVReader(new BufferedReader(new FileReader(file)));
+		CSVReader csvr = new CSVReader(new BufferedReader(new FileReader(file)), separator);
 		columns = new ArrayList<String>();
 		columns.addAll(Arrays.asList(csvr.readNext()));
 		checkColumns();
@@ -185,7 +185,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			if(col_scientificname >= 0) {
 				// Parse a canonical name out of a scientific name.
 				Pattern p_canonical = Pattern.compile("^([A-Z][a-z]+\\s+[a-z]+(?:\\s+[a-z]+)?)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
-				Pattern p_monomial = Pattern.compile("^([A-Z][a-z]+)\\b");
+				Pattern p_monomial = Pattern.compile("^([A-Z](?:[a-z]+|[A-Z]+))\\b");
 				
 				List<String[]> new_data = new ArrayList<String[]>();
 				
@@ -371,8 +371,9 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			throw new UnsupportedOperationException("File type " + type + " not yet supported!");
 		}
 		
-		writer.writeNext((String[]) columns.toArray());
+		writer.writeNext(columns.toArray(new String[columns.size()]));
 		writer.writeAll(data);
+		writer.flush();
 		writer.close();
 	}
 	
