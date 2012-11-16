@@ -49,6 +49,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	private char quotechar = '"';
 	
 	private HashMap<String, Integer> columnNames;
+	private HashMap<String, Integer> columnNames_caseInsensitive;
 	private List<String> columns;
 	private List<String[]> data;
 	private HashSet<String> names = new HashSet<String>();
@@ -57,6 +58,9 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	private int col_canonicalname = -1;
 	private int col_family = -1;
 	private int col_acceptedname = -1;
+	private int col_genus = -1;
+	private int col_species = -1;
+	private int col_subspecies = -1;
 	
 	public static final int FILE_CSV_DELIMITED = 0;
 	public static final int FILE_TAB_DELIMITED = 1;
@@ -119,10 +123,12 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	private void checkColumns() throws IOException {
 		// 1. All columns must be unique.
 		columnNames = new HashMap<String, Integer>(columns.size());
+		columnNames_caseInsensitive = new HashMap<String, Integer>(columns.size());
 		
 		int x = 0;
 		for(String colName: columns) {
 			columnNames.put(colName, x);
+			columnNames_caseInsensitive.put(colName.toLowerCase(), x);
 			x++;
 		}
 		
@@ -131,19 +137,55 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		}
 		
 		// 2. See if we can identify any scientific names.
-		col_canonicalname = column("canonicalname", "canonicalName", "canonical_name");
-		col_scientificname = column("scientificname", "scientificName", "scientific_name");
-		col_acceptedname = column("acceptedNameUsageId", "AcceptedNameUsageId", "AcceptedNameUsageID", "acceptedName", "acceptedname", "accepted_name");
-		col_family = column("family", "Family");
+		col_canonicalname = column("canonicalname", "canonical_name");
+		col_scientificname = column("scientificname", "scientific_name");
+		col_acceptedname = column("acceptedNameUsage",  "acceptedName", "acceptedname", "accepted_name");
+		col_family = column("family");
+		col_genus = column("genus");
+		col_species = column("specificEpithet", "species");
+		col_subspecies = column("infraspecificEpithet", "subspecies");
 	}
 	
 	private void indexNames() {
 		if(col_canonicalname < 0) {
 			// If there is no canonical name, create one.
 			
+			if(col_genus >= 0 && col_species >= 0) {
+				List<String[]> new_data = new ArrayList<String[]>();
+				
+				for(String[] row: data) {
+					String[] new_row = new String[row.length + 1];
+					System.arraycopy(row, 0, new_row, 0, row.length);
+					
+					String genus = row[col_genus];
+					String species = row[col_species];
+					String subspecies = "";
+					
+					if(col_subspecies >= 0) {
+						subspecies = row[col_subspecies];
+					}
+					
+					if(genus.length() > 0 && species.length() > 0) {
+						if(subspecies.length() > 0) {
+							new_row[row.length] = genus + " " + species + " " + subspecies;
+						} else {
+							new_row[row.length] = genus + " " + species;
+						}
+					} else {
+						new_row[row.length] = "";
+					}
+					
+					new_data.add(new_row);
+				}
+				
+				columns.add("canonicalName");
+				col_canonicalname = columns.size() - 1;
+				data = new_data;
+			}
+			else
 			if(col_scientificname >= 0) {
 				// Parse a canonical name out of a scientific name.
-				Pattern p_canonical = Pattern.compile("^([A-Z][a-z]+\\s+[a-z]+)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
+				Pattern p_canonical = Pattern.compile("^([A-Z][a-z]+\\s+[a-z]+(?:\\s+[a-z]+)?)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
 				Pattern p_monomial = Pattern.compile("^([A-Z][a-z]+)\\b");
 				
 				List<String[]> new_data = new ArrayList<String[]>();
@@ -183,8 +225,10 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		}
 		
 		names.clear();
-		for(String[] row: data) {
-			names.add(row[col_name].toLowerCase());
+		if(col_name >= 0) {
+			for(String[] row: data) {
+				names.add(row[col_name].toLowerCase());
+			}
 		}
 	}
 	
@@ -200,11 +244,12 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			return -1;
 	}
 	
+	// Note: case-insensitive by default.
 	public int column(String... colNames) {
 		for(String colName: colNames) {
-			int c = column(colName);
-			if(c != -1)
-				return c;
+			Integer i = columnNames_caseInsensitive.get(colName);
+			if(i != null)
+				return i.intValue();
 		}
 		return -1;
 	}

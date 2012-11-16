@@ -29,7 +29,7 @@
 		<key>MainClass</key>
 		<string>com.ggvaidya.TaxRef.TaxRef</string>
 		<key>VMOptions</key>
-		<string>-Xmx1024m</string>
+		<string>-Xmx5120m</string>
 	</dict>
 </dict>
 </plist>

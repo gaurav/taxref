@@ -72,8 +72,15 @@
 
     -->
     <target name="-post-jar">
+        <!-- Build the standard Mac release (1GB memory) -->
         <copy file="./dist/TaxRef.jar" todir="./releases/build/MacOSX/TaxRef.app/Contents/Resources/Java" />
         <copy todir="./releases/build/MacOSX/TaxRef.app/Contents/Resources/Java/lib">
+            <fileset dir="./dist/lib" />
+        </copy>
+        
+        <!-- Build the large Mac release (5GB memory) -->
+         <copy file="./dist/TaxRef.jar" todir="./releases/build/MacOSX/TaxRef 5GB.app/Contents/Resources/Java" />
+        <copy todir="./releases/build/MacOSX/TaxRef 5GB.app/Contents/Resources/Java/lib">
             <fileset dir="./dist/lib" />
         </copy>
     </target>

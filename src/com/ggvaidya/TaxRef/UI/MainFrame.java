@@ -39,7 +39,7 @@ import javax.swing.table.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class MainFrame {
-	JFrame mainFrame = new JFrame(TaxonValid.getName() + "/" + TaxonValid.getVersion());
+	JFrame mainFrame = new JFrame(TaxRef.getName() + "/" + TaxRef.getVersion());
 	JTable table = new JTable();
 	DarwinCSV currentCSV = null;
 
@@ -73,7 +73,7 @@ public class MainFrame {
 		menuBar.add(fileMenu);
 		
 		/* File -> Open CSV */
-		JMenuItem miFileOpen = new JMenuItem(new AbstractAction("Open CSV") {
+		JMenuItem miFileOpenCSV = new JMenuItem(new AbstractAction("Open CSV") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file ...", FileDialog.LOAD);
@@ -86,7 +86,24 @@ public class MainFrame {
 				loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
 			}
 		});
-		fileMenu.add(miFileOpen);
+		fileMenu.add(miFileOpenCSV);
+		
+		/* File -> Open tab-delimited */
+		JMenuItem miFileOpenTab = new JMenuItem(new AbstractAction("Open tab-delimited") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				FileDialog fd = new FileDialog(mainFrame, "Open Darwin tab-delimited file ...", FileDialog.LOAD);
+				fd.setVisible(true);
+				File file = new File(fd.getFile());
+				if(fd.getDirectory() != null) {
+					file = new File(fd.getDirectory(), fd.getFile());
+				}
+				
+				loadFile(file, DarwinCSV.FILE_TAB_DELIMITED);
+			}
+		});
+		fileMenu.add(miFileOpenTab);
+		
 		
 		/* File -> Save CSV */
 		JMenuItem miFileSave = new JMenuItem(new AbstractAction("Save as CSV") {
@@ -152,9 +169,7 @@ public class MainFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				DarwinCSV csv = DownloadITIS.getIt(mainFrame);
-				table.removeAll();
-				table.setModel(csv);
-				table.setDefaultRenderer(String.class, csv);
+				currentCSV.match(csv);
 				table.repaint();
 			}
 		});

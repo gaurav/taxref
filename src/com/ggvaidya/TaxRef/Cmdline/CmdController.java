@@ -22,12 +22,12 @@
  */
 package com.ggvaidya.TaxRef.Cmdline;
 
-import com.ggvaidya.TaxRef.UI.MainFrame;
-import com.ggvaidya.TaxRef.Model.NameList;
-import com.ggvaidya.TaxRef.TaxonValid;
+import au.com.bytecode.opencsv.*;
+import com.ggvaidya.TaxRef.*;
+import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.UI.*;
 import java.io.*;
 import org.apache.commons.cli.*;
-import au.com.bytecode.opencsv.*;
 
 /**
  * The CmdLine Controller class handles command line instructions to
@@ -52,19 +52,20 @@ public class CmdController {
 		}
 		
 		if(cmd.hasOption("version")) {
-			System.err.println(TaxonValid.getName() + "/" + TaxonValid.getVersion());
-			System.err.println(TaxonValid.getDescription());
-			System.err.println(TaxonValid.getCopyright());
+			System.err.println(TaxRef.getName() + "/" + TaxRef.getVersion());
+			System.err.println(TaxRef.getDescription());
+			System.err.println(TaxRef.getCopyright());
 			System.err.println();
 			System.exit(0);
 		}
 		
-		boolean case_sensitive = (cmd.getOptionValue("case") == null) ? false : true;
+		// boolean case_sensitive = (cmd.getOptionValue("case") == null) ? false : true;
 		
 		MainFrame mf = new MainFrame();
 	}
 	
-	private static void exitedCode(boolean case_sensitive, CommandLine cmd, CommandLineParser parser) {
+	// To be recombined once taxref becomes a command line tool.
+	private static void excisedCode(boolean case_sensitive, CommandLine cmd, CommandLineParser parser) {
 		
 		System.err.println("Case sensitive: " + case_sensitive);
 		
