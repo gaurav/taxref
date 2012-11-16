@@ -29,9 +29,9 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-package com.ggvaidya.TaxonValid.UI;
+package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxonValid.Common.*;
+import com.ggvaidya.TaxRef.Common.DelayCallback;
 import java.awt.*;
 
 public class ProgressBar extends Canvas implements DelayCallback {	

@@ -20,19 +20,15 @@
  *  along with TaxonValid.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package com.ggvaidya.TaxonValid.UI;
+package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxonValid.*;
-import com.ggvaidya.TaxonValid.Net.*;
-import com.ggvaidya.TaxonValid.Model.*;
-import com.ggvaidya.TaxonValid.UI.*;
+import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.*;
+import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.io.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeListener;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.table.*;
 
@@ -76,7 +72,7 @@ public class MainFrame {
 		JMenu fileMenu = new JMenu("File");
 		menuBar.add(fileMenu);
 		
-		/* File -> Open */
+		/* File -> Open CSV */
 		JMenuItem miFileOpen = new JMenuItem(new AbstractAction("Open CSV") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -91,6 +87,26 @@ public class MainFrame {
 			}
 		});
 		fileMenu.add(miFileOpen);
+		
+		/* File -> Save CSV */
+		JMenuItem miFileSave = new JMenuItem(new AbstractAction("Save as CSV") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				FileDialog fd = new FileDialog(mainFrame, "Save Darwin CSV file ...", FileDialog.SAVE);
+				fd.setVisible(true);
+				File file = new File(fd.getFile());
+				if(fd.getDirectory() != null) {
+					file = new File(fd.getDirectory(), fd.getFile());
+				}
+				
+				try {
+					currentCSV.saveToFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+				} catch(IOException ex) {
+					MessageBox.messageBox(mainFrame, "Could not write file: " + file, "Could not write file " + file + ": " + ex);
+				}
+			}
+		});
+		fileMenu.add(miFileSave);
 		
 		/* File -> Exit */
 		JMenuItem miFileExit = new JMenuItem(new AbstractAction("Exit") {
@@ -135,7 +151,7 @@ public class MainFrame {
 		JMenuItem miMatchITIS = new JMenuItem(new AbstractAction("Match against ITIS") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				DarwinCSV csv = DownloadITIS.doIt(mainFrame);
+				DarwinCSV csv = DownloadITIS.getIt(mainFrame);
 				table.removeAll();
 				table.setModel(csv);
 				table.setDefaultRenderer(String.class, csv);

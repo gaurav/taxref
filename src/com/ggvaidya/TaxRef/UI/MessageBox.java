@@ -27,7 +27,7 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-package com.ggvaidya.TaxonValid.UI;
+package com.ggvaidya.TaxRef.UI;
 
 import java.awt.*;
 import java.awt.event.*;

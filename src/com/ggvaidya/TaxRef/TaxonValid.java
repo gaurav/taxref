@@ -20,9 +20,9 @@
  *  along with TaxonValid.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package com.ggvaidya.TaxonValid;
+package com.ggvaidya.TaxRef;
 
-import com.ggvaidya.TaxonValid.Cmdline.*;
+import com.ggvaidya.TaxRef.Cmdline.CmdController;
 
 /**
  * The main class for TaxonValid.

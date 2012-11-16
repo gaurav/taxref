@@ -20,11 +20,11 @@
  *  along with TaxonValid.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package com.ggvaidya.TaxonValid.Cmdline;
+package com.ggvaidya.TaxRef.Cmdline;
 
-import com.ggvaidya.TaxonValid.*;
-import com.ggvaidya.TaxonValid.UI.*;
-import com.ggvaidya.TaxonValid.Model.*;
+import com.ggvaidya.TaxRef.UI.MainFrame;
+import com.ggvaidya.TaxRef.Model.NameList;
+import com.ggvaidya.TaxRef.TaxonValid;
 import java.io.*;
 import org.apache.commons.cli.*;
 import au.com.bytecode.opencsv.*;

@@ -21,7 +21,7 @@
  *
  */
 
-package com.ggvaidya.TaxonValid.Model;
+package com.ggvaidya.TaxRef.Model;
 
 import java.util.*;
 

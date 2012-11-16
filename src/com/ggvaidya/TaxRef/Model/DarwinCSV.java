@@ -21,7 +21,7 @@
  *
  */
 
-package com.ggvaidya.TaxonValid.Model;
+package com.ggvaidya.TaxRef.Model;
 
 import au.com.bytecode.opencsv.*;
 import com.sun.media.jai.codec.PNGEncodeParam;
@@ -266,6 +266,20 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 
 	public boolean hasName(String str) {
 		return names.contains(str.toLowerCase());
+	}
+
+	public void saveToFile(File file, int type) throws IOException {
+		CSVWriter writer = null;
+		
+		if(type == FILE_CSV_DELIMITED) {
+			writer = new CSVWriter(new FileWriter(file));
+		} else {
+			throw new UnsupportedOperationException("File type " + type + " not yet supported!");
+		}
+		
+		writer.writeNext(columns);
+		writer.writeAll(data);
+		writer.close();
 	}
 	
 }
