@@ -137,7 +137,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		
 		// 2. See if we can identify any scientific names.
 		col_canonicalname = column("canonicalname", "canonical_name");
-		col_scientificname = column("scientificname", "scientific_name");
+		col_scientificname = column("scientificname", "scientific_name", "scientific name", "name");
 		col_acceptedname = column("acceptedNameUsage",  "acceptedName", "acceptedname", "accepted_name");
 		col_family = column("family");
 		col_genus = column("genus");
@@ -184,8 +184,8 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			else
 			if(col_scientificname >= 0) {
 				// Parse a canonical name out of a scientific name.
-				Pattern p_canonical = Pattern.compile("^([A-Z][a-z]+\\s+[a-z]+(?:\\s+[a-z]+)?)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
-				Pattern p_monomial = Pattern.compile("^([A-Z](?:[a-z]+|[A-Z]+))\\b");
+				Pattern p_canonical = Pattern.compile("^\\s*([A-Z][a-z]+\\s+[a-z]+(?:\\s+[a-z]+)?)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
+				Pattern p_monomial = Pattern.compile("^\\s*([A-Z](?:[a-z]+|[A-Z]+))\\b");
 				
 				List<String[]> new_data = new ArrayList<String[]>();
 				
