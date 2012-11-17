@@ -30,6 +30,8 @@ import java.awt.datatransfer.*;
 import java.io.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EtchedBorder;
 import javax.swing.table.*;
 
 /**
@@ -41,6 +43,8 @@ import javax.swing.table.*;
 public class MainFrame {
 	JFrame mainFrame = new JFrame(TaxRef.getName() + "/" + TaxRef.getVersion());
 	JTable table = new JTable();
+	JComboBox operations = new JComboBox();
+	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
 	DarwinCSV currentCSV = null;
 
 	public MainFrame() {
@@ -51,6 +55,8 @@ public class MainFrame {
 	}
 	
 	private void loadFile(File file, int type) {
+		operations.removeAllItems();
+		
 		try {
 			currentCSV = new DarwinCSV(file, type);
 			table.removeAll();
@@ -62,6 +68,11 @@ public class MainFrame {
 				"Could not read file '" + file + "'", 
 				"Unable to read file '" + file + "': " + ex
 			);
+		}
+		
+		operations.addItem("Summarize name identification");
+		for(String column: currentCSV.columns()) {
+			operations.addItem("Summarize column '" + column + "'");
 		}
 	}
 	
@@ -210,30 +221,41 @@ public class MainFrame {
 		};
 		table.setModel(blankDataModel);
 		
-		/*
-		mainFrame.setTransferHandler(new TransferHandler() {
-			public boolean importData(JComponent comp, Transferable t) {
-				if(t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-					try {
-						java.util.List<java.io.File> list = (java.util.List<java.io.File>) t.getTransferData(DataFlavor.javaFileListFlavor);
-						
-						loadFile(list.get(0), DarwinCSV.FILE_CSV_DELIMITED);
-						
-						return true;
-						
-					} catch (UnsupportedFlavorException ex) {
-						return false;
-					} catch (IOException ex) {
-						return false;
-					}
+		JPanel panel = new JPanel();
+		panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+		
+		panel.setLayout(new BorderLayout());
+		panel.add(operations, BorderLayout.NORTH);
+		panel.add(new JScrollPane(results));
+		
+		operations.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				if(e.getStateChange() != ItemEvent.SELECTED)
+					return;
+				
+				String actionCmd = (String) e.getItem();
+				String colName = null;
+				
+				if(actionCmd.startsWith("Summarize name identification")) {
+					colName = null;
+				} else if(actionCmd.startsWith("Summarize column '")) {
+					colName = actionCmd.split("'")[1];
 				}
 				
-				return false;
+				if(currentCSV != null)
+					results.setText(currentCSV.generateTextSummaryOfColumn(colName));
+				else
+					results.setText("No file loaded.");
+				
+				results.setCaretPosition(0);
 			}
 		});
-		*/
 		
-		mainFrame.add(new JScrollPane(table));
+		operations.addItem("No file loaded.");
+		
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, new JScrollPane(table), panel);
+		mainFrame.add(split);
 		mainFrame.pack();
 	}
 }
