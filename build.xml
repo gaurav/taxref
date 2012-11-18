@@ -79,9 +79,16 @@
         </copy>
         
         <!-- Build the large Mac release (5GB memory) -->
-         <copy file="./dist/TaxRef.jar" todir="./releases/build/MacOSX/TaxRef 5GB.app/Contents/Resources/Java" />
+        <copy file="./dist/TaxRef.jar" todir="./releases/build/MacOSX/TaxRef 5GB.app/Contents/Resources/Java" />
         <copy todir="./releases/build/MacOSX/TaxRef 5GB.app/Contents/Resources/Java/lib">
             <fileset dir="./dist/lib" />
         </copy>
+        
+        <!-- Build the Windows release -->
+        <copy file="./dist/TaxRef.jar" todir="./releases/build/Windows" />
+        <copy todir="./releases/build/Windows/lib">
+            <fileset dir="./dist/lib" />
+        </copy>
+        <zip destfile="./releases/build/TaxRef-devel.zip" basedir="./releases/build/Windows" />
     </target>
 </project>
