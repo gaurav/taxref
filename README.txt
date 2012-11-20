@@ -27,10 +27,10 @@ For now, TaxRef is in a very early pre-release. Please use the following
 steps to try TaxRef off.
 
     1.  Check if you have Java installed: http://www.java.com/en/download/installed.jsp
-        Mac OS X 10.6 and below: Java should be pre-installed.
-        Mac OS X 10.7 (Lion) and above: Java is not pre-installed.
-        Windows: depends on your computer manufacturer.
-        Linux: probably not, but should be available from your package manager.
+          Mac OS X 10.6 and below: Java should be pre-installed.
+          Mac OS X 10.7 (Lion) and above: Java is not pre-installed.
+          Windows: depends on your computer manufacturer.
+          Linux: probably not, but should be available from your package manager.
 
     2.  If not, you should be able to install a version of Java for your
         operating system from: http://www.java.com/en/download/manual.jsp
@@ -65,9 +65,9 @@ steps to try TaxRef off.
               light up in red (not matched) or green (matched).
 
     8.  If you want, you  can save this file as a CSV -- the red/green match 
-        status isn't exported, but the canonical name is. Eventually, I hope to 
-        have it set up so that it adds the taxonId for matched names, which can 
-        then be exported to indicate that the name was successfully matched.
+        status isn't exported yet, but the canonical name is. I hope to have it 
+        set up so that it adds the taxonId for matched names, which can then be 
+        exported to indicate that the name was successfully matched.
 
 3. COPYRIGHT
 
