@@ -21,7 +21,55 @@ TaxRef is designed to meet three needs:
         e.g. one checklist might have "80% (n=4) of the names in
         genus 'Panthera'" as the other checklist.
 
-2. COPYRIGHT
+2. HOW TO USE IT
+
+For now, TaxRef is in a very early pre-release. Please use the following
+steps to try TaxRef off.
+
+    1.  Check if you have Java installed: http://www.java.com/en/download/installed.jsp
+        Mac OS X 10.6 and below: Java should be pre-installed.
+        Mac OS X 10.7 (Lion) and above: Java is not pre-installed.
+        Windows: depends on your computer manufacturer.
+        Linux: probably not, but should be available from your package manager.
+
+    2.  If not, you should be able to install a version of Java for your
+        operating system from: http://www.java.com/en/download/manual.jsp
+    3.  Choose a CSV dataset to validate. If you can't come up with one, 
+        download the DwC-A file from 
+        http://ipt.pensoft.net/ipt/resource.do?r=neembucu and unzip it. Find the 
+        "taxon.txt" file in the unzipped directory.
+
+	4.  TaxRef doesn't yet support files without a header line; however, it does 
+        support tab-delimited files! If you're using your own checklist, make 
+        sure that it's either tab-delimited or CSV with a header as the first 
+        line of the line.
+    5.  Download the ITIS DwC taxa.txt file from 
+        http://gaurav.github.com/itis-dwca/ (right-click on 
+        http://gaurav.github.com/itis-dwca/latest/taxa.txt and do a Save-As).
+
+    6.  In TaxRef, select menu item "File" -> "Open tab-delimited" and choose 
+        the taxon.txt.
+            - TaxRef automatically extracts a canonicalName (monomial, binomial 
+              or trinomial) from the scientificName, unless a "canonicalName"
+              column is already defined in the input file.
+            - In some cases (e.g. id #1776), TaxRef cannot extract a canonical 
+              name (from "H. leucophlaeos (Mart. ex DC.) Mattos"). However, this 
+              is a fully editable work environment -- you can enter the correct 
+              name into the canonicalName column if you like.
+
+    7.  Select menu item "Match" -> "Match against CSV", and choose the ITIS 
+        CSV file (I'm calling these file "DarwinCSV" files for convenience)
+            - The "Match" -> "Match against ITIS" menu option will automatically 
+              download the ITIS DwC file you downloaded above and run the match.
+            - All matched names -- scientific names and canonical names -- will 
+              light up in red (not matched) or green (matched).
+
+    8.  If you want, you  can save this file as a CSV -- the red/green match 
+        status isn't exported, but the canonical name is. Eventually, I hope to 
+        have it set up so that it adds the taxonId for matched names, which can 
+        then be exported to indicate that the name was successfully matched.
+
+3. COPYRIGHT
 
 Copyright (C) 2012 Gaurav Vaidya.
 
