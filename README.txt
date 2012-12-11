@@ -24,7 +24,7 @@ TaxRef is designed to meet three needs:
 2. HOW TO USE IT
 
 For now, TaxRef is in a very early pre-release. Please use the following
-steps to try TaxRef off.
+steps to try TaxRef.
 
     1.  Check if you have Java installed: http://www.java.com/en/download/installed.jsp
           Mac OS X 10.6 and below: Java should be pre-installed.
@@ -32,14 +32,18 @@ steps to try TaxRef off.
           Windows: depends on your computer manufacturer.
           Linux: probably not, but should be available from your package manager.
 
-    2.  If not, you should be able to install a version of Java for your
+        If not, you should be able to install a version of Java for your
         operating system from: http://www.java.com/en/download/manual.jsp
+
+    2.  Download TaxRef for Windows from:
+            https://github.com/gaurav/taxref/blob/master/releases/build/TaxRef-devel.zip?raw=true
+
     3.  Choose a CSV dataset to validate. If you can't come up with one, 
         download the DwC-A file from 
         http://ipt.pensoft.net/ipt/resource.do?r=neembucu and unzip it. Find the 
         "taxon.txt" file in the unzipped directory.
 
-	4.  TaxRef doesn't yet support files without a header line; however, it does 
+    4.  TaxRef doesn't yet support files without a header line; however, it does 
         support tab-delimited files! If you're using your own checklist, make 
         sure that it's either tab-delimited or CSV with a header as the first 
         line of the line.
