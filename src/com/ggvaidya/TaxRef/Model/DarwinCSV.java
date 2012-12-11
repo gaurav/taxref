@@ -56,6 +56,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	private List<String> columns;
 	private List<String[]> data;
 	private HashSet<String> names = new HashSet<String>();
+	private HashSet<Integer> nameColumns = new HashSet<Integer>();
 	
 	public String toString() {
 		String type = "CSV";
@@ -167,9 +168,21 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		col_genus = column("genus");
 		col_species = column("specificEpithet", "species");
 		col_subspecies = column("infraspecificEpithet", "subspecies");
+		
+		nameColumns.add(col_canonicalname);
+		nameColumns.add(col_scientificname);
+		nameColumns.add(col_acceptedname);
+		nameColumns.add(col_family);
+		nameColumns.add(col_genus);
+		nameColumns.add(col_species);
+		nameColumns.add(col_subspecies);
+		nameColumns.remove(-1);	// Remove any blank fields from before.
 	}
 	
 	private void indexNames() {
+		
+		// TODO: Some of this parsing code can and should move into the Name model.
+		
 		if(col_canonicalname < 0) {
 			// If there is no canonical name, create one.
 			
@@ -196,6 +209,10 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 						}
 					} else {
 						new_row[row.length] = "";
+					}
+					
+					if(new_row[row.length] != null) {
+						new_row[row.length] = new_row[row.length].trim();
 					}
 					
 					new_data.add(new_row);
@@ -307,7 +324,10 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
-		return String.class;
+		if(nameColumns.contains(columnIndex))
+			return Name.class;
+		else 
+			return String.class;
 	}
 
 	@Override
@@ -317,12 +337,16 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
+		if(getColumnClass(columnIndex) == Name.class) {
+			return new Name(data.get(rowIndex)[columnIndex]);
+		} else {	
 		return data.get(rowIndex)[columnIndex];
+		}
 	}
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		data.get(rowIndex)[columnIndex] = (String) aValue;
+		data.get(rowIndex)[columnIndex] = aValue.toString();
 		for(TableModelListener tmi: tmiList) {
 			tmi.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex, TableModelEvent.UPDATE));
 		}
@@ -345,11 +369,11 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-		
-                c.setBackground(Color.WHITE);
-                
+        c.setBackground(Color.WHITE);
+        
 		if(column == col_family || column == col_scientificname || column == col_acceptedname || column == col_canonicalname) {
-			String str = (String) value;
+			Name name = (Name) value;
+			String str = name.toString();
 			
 			if(matcher == null) {
 				if(str.length() == 0) {
@@ -362,6 +386,8 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 					c.setBackground(Color.GRAY);
 				} else if(matcher.hasName(str)) {
 					c.setBackground(new Color(0, 128, 0));
+				} else if(matcher.hasName(name.getGenus())) {
+					c.setBackground(new Color(255, 117, 24));
 				} else {
 					c.setBackground(new Color(226, 6, 44));
 				}
@@ -380,7 +406,9 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	}
 
 	public boolean hasName(String str) {
-		return names.contains(str.toLowerCase());
+		if(str == null)
+			return false;
+		return names.contains(str.trim().toLowerCase());
 	}
 
 	public void saveToFile(File file, int type) throws IOException {
@@ -423,9 +451,11 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			int blank_rows = 0;
 			int total_non_blank = 0;
 			int total_matched = 0;
+			int total_genus_matched = 0;
 			int total_not_matched = 0;
 			HashMap<String, Integer> uniqueValues = new HashMap<String, Integer>();
 			HashSet<String> matchedNames = new HashSet<String>();
+			HashSet<String> matchedGenusNames = new HashSet<String>();
 			boolean matched = false;
 			
 			for(String[] row: data) {
@@ -447,6 +477,9 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 						if(matcher.hasName(val)) {
 							matchedNames.add(val);
 							total_matched++;
+						} else if(matcher.hasName(new Name(val).getGenus())) {
+							matchedGenusNames.add(val);
+							total_genus_matched++;
 						} else {
 							total_not_matched++;
 						}
@@ -462,6 +495,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			if(matched) {
 				builder.append("    Names were matched against ").append(matcher.toString()).append(". (percentages are against non-blank rows)\n");
 				builder.append("      Matched names: ").append(number_and_percentage(total_matched, total_non_blank)).append("\n");
+				builder.append("      Matched genus names: ").append(number_and_percentage(total_genus_matched, total_non_blank)).append("\n");
 				builder.append("      Unmatched names: ").append(number_and_percentage(total_not_matched, total_non_blank)).append("\n");
 			}
 			
@@ -483,6 +517,8 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 				if(matched) {
 					if(matchedNames.contains(val))
 						s_matched = "\tmatched";
+					else if(matchedGenusNames.contains(val))
+						s_matched = "\tmatched to genus";
 					else
 						s_matched = "\tnot matched";
 				}

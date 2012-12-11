@@ -60,8 +60,8 @@ public class MainFrame {
 		try {
 			currentCSV = new DarwinCSV(file, type);
 			table.removeAll();
-			table.setDefaultRenderer(String.class, currentCSV);
-			table.setModel(currentCSV);
+			table.setDefaultRenderer(Name.class, currentCSV);	
+		table.setModel(currentCSV);
 			table.repaint();
 		} catch(IOException ex) {
 			MessageBox.messageBox(mainFrame, 
