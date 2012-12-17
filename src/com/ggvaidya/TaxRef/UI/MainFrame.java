@@ -33,6 +33,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import javax.swing.table.*;
+import java.awt.dnd.*;
 
 /**
  * MainFrame is the main UI element for TaxonValid: it displays the input file
@@ -257,5 +258,45 @@ public class MainFrame {
 		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, new JScrollPane(table), panel);
 		mainFrame.add(split);
 		mainFrame.pack();
+		
+		mainFrame.setDropTarget(new DropTarget(mainFrame, new DropTargetAdapter() {
+			@Override
+			public void dragEnter(DropTargetDragEvent dtde) {
+				dtde.acceptDrag(DnDConstants.ACTION_COPY_OR_MOVE);
+			}
+
+			@Override
+			public void dragOver(DropTargetDragEvent dtde) {
+			}
+
+			@Override
+			public void dropActionChanged(DropTargetDragEvent dtde) {
+			}
+
+			@Override
+			public void dragExit(DropTargetEvent dte) {
+			}
+
+			@Override
+			public void drop(DropTargetDropEvent dtde) {
+				if(dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+					dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+					
+					Transferable t = dtde.getTransferable();
+					
+					try {
+						java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
+						
+						File f = files.get(files.size() - 1);
+						loadFile(f, DarwinCSV.FILE_CSV_DELIMITED);
+						
+					} catch (UnsupportedFlavorException ex) {
+						dtde.dropComplete(false);
+					} catch (IOException ex) {
+						dtde.dropComplete(false);
+					}
+				}
+			}
+		}));
 	}
 }
