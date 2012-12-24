@@ -23,12 +23,14 @@
 
 package com.ggvaidya.TaxRef.Model;
 
+import javax.swing.table.*;
+
 /**
  * A Name is a scientific name-string.
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class Name {
+public class Name implements TableCellRenderer {
 	String namestring = "";
 	String monomial = null;
 	String genus = null;

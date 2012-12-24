@@ -242,12 +242,12 @@ public class MainFrame {
 
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
-				System.err.println("OK: " + currentCSV.getMatcher());
+				// System.err.println("OK: " + currentCSV.getMatcher());
 				
 				if(currentCSV == null || currentCSV.getMatcher() == null)
 					return;
 				
-				System.err.println("Looking up!");
+				// System.err.println("Looking up!");
 				
 				// 1. Figure out what the selected cell is.
 				Object o = table.getModel().getValueAt(table.getSelectedRow(), table.getSelectedColumn());

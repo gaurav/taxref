@@ -37,7 +37,7 @@ import java.text.*;
 import com.ggvaidya.TaxRef.Common.*;
 
 /**
- * A DarwinCSV is a CSV file with unique, non-repeating column names.
+ * A DarwinCSV is a CSV file which contains biodiversity data.
  * This code can also parse tab-delimited and semicolon delimited files,
  * so it should be able to handle any file that comes out of a Darwin Core
  * Archive. Eventually, I'll write a wrapper that can process DwC-A files
@@ -46,13 +46,21 @@ import com.ggvaidya.TaxRef.Common.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class DarwinCSV implements TableModel, TableCellRenderer {
-	private char separator = ',';
-	private char quotechar = '"';
-	
 	private File myFile;
 	private int myType;
+	private char separator = ',';
+	
+	// These variables map column names to the column index.
+	// Note that we can have multiple column names pointing to the
+	// same table (that's how we handle unusual names).
 	private HashMap<String, Integer> columnNames;
 	private HashMap<String, Integer> columnNames_caseInsensitive;
+	
+	// This variable maps column indices to a "canonical" column name.
+	// This is a UNIQUE name which identifies each column; ideally, it's
+	// what we got while loading the file, but it might also be.
+	private HashMap<Integer, String> canonicalColumnNames;
+	
 	private List<String> columns;
 	private List<String[]> data;
 	private HashSet<String> names = new HashSet<String>();

@@ -36,9 +36,9 @@ public class MatchInformationPanel extends JPanel {
 	private DarwinCSV source;
 	private DarwinCSV match;
 	
-	private JTextField tf_name_to_match = new JTextField("            ");
-	private JTextField tf_accepted_name = new JTextField("            ");
-	private JTextField tf_taxonid = new JTextField("            ");
+	private JTextField tf_name_to_match = new JTextField();
+	private JTextField tf_accepted_name = new JTextField();
+	private JTextField tf_taxonid = new JTextField("          ");
 	private JTextField tf_match_summary = new JTextField("Zero match problems!");
 	
 	public MatchInformationPanel() {
@@ -69,7 +69,6 @@ public class MatchInformationPanel extends JPanel {
 	}
 	
 	/* I have a horrible feeling that some day this is going to become an interface. */
-	
 	public void matchChanged(DarwinCSV csv) {
 		source = csv;
 		match = csv.getMatcher();
