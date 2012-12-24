@@ -33,12 +33,19 @@ import javax.swing.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class MatchInformationPanel extends JPanel {
+	private DarwinCSV source;
+	private DarwinCSV match;
+	
 	private JTextField tf_name_to_match = new JTextField("            ");
 	private JTextField tf_accepted_name = new JTextField("            ");
 	private JTextField tf_taxonid = new JTextField("            ");
+	private JTextField tf_match_summary = new JTextField("Zero match problems!");
 	
 	public MatchInformationPanel() {
 		super();
+		
+		tf_match_summary.setBackground(Color.GREEN);
+		tf_match_summary.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		initPanel();
 	}
@@ -51,13 +58,24 @@ public class MatchInformationPanel extends JPanel {
 		rl.add(new JButton("Search"), RightLayout.BESIDE);
 		
 		rl.add(new JLabel("Accepted name: "), RightLayout.NEXTLINE);
-		rl.add(tf_accepted_name, RightLayout.BESIDE);
+		rl.add(tf_accepted_name, RightLayout.BESIDE | RightLayout.STRETCH_X);
 		rl.add(new JLabel("TaxonID"), RightLayout.BESIDE);
 		rl.add(tf_taxonid, RightLayout.BESIDE);
 		rl.add(new JButton("Look up"), RightLayout.BESIDE);
+		
+		rl.add(new JButton("<< Previous"), RightLayout.NEXTLINE);
+		rl.add(tf_match_summary, RightLayout.BESIDE | RightLayout.FILL_3);
+		rl.add(new JButton("Next >>"), RightLayout.BESIDE);
 	}
 	
-	public void setMatchInformation(DarwinCSV csv, Name matchedName) {
-		tf_name_to_match.setText(matchedName.toString());
+	/* I have a horrible feeling that some day this is going to become an interface. */
+	
+	public void matchChanged(DarwinCSV csv) {
+		source = csv;
+		match = csv.getMatcher();
+	}
+	
+	public void matchSelected(Name matchedName) {
+		
 	}
 }

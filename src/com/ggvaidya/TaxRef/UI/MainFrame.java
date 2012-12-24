@@ -58,15 +58,26 @@ public class MainFrame {
 		mainFrame.setVisible(true);
 	}
 	
+	private void setCurrentCSV(DarwinCSV csv) {
+		currentCSV = csv;
+		table.removeAll();
+		table.setDefaultRenderer(Name.class, currentCSV);	
+		table.setModel(currentCSV);
+		table.repaint();
+		matchInfoPanel.matchChanged(currentCSV);
+	}
+	
+	private void matchAgainst(DarwinCSV against) {
+		currentCSV.match(against);
+		matchInfoPanel.matchChanged(currentCSV);
+	}
+	
 	private void loadFile(File file, int type) {
 		operations.removeAllItems();
 		
 		try {
-			currentCSV = new DarwinCSV(file, type);
-			table.removeAll();
-			table.setDefaultRenderer(Name.class, currentCSV);	
-		table.setModel(currentCSV);
-			table.repaint();
+			setCurrentCSV(new DarwinCSV(file, type));
+
 		} catch(IOException ex) {
 			MessageBox.messageBox(mainFrame, 
 				"Could not read file '" + file + "'", 
@@ -170,7 +181,7 @@ public class MainFrame {
 				try {
 					DarwinCSV csv_matcher = new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
 					
-					currentCSV.match(csv_matcher);
+					matchAgainst(csv_matcher);
 					
 				} catch (IOException ex) {
 					MessageBox.messageBox(mainFrame, "Unable to open file '" + file + "'", "UNable to open file '" + file + "': " + ex);
@@ -184,7 +195,7 @@ public class MainFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				DarwinCSV csv = DownloadITIS.getIt(mainFrame);
-				currentCSV.match(csv);
+				matchAgainst(csv);
 				table.repaint();
 			}
 		});
@@ -241,7 +252,7 @@ public class MainFrame {
 				// 1. Figure out what the selected cell is.
 				Object o = table.getModel().getValueAt(table.getSelectedRow(), table.getSelectedColumn());
 				if(o.getClass().equals(Name.class)) {
-					matchInfoPanel.setMatchInformation(currentCSV.getMatcher(), (Name) o);
+					matchInfoPanel.matchSelected((Name) o);
 				}
 			}
 		});
