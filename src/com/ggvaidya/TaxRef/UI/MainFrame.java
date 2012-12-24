@@ -34,6 +34,8 @@ import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import javax.swing.table.*;
 import java.awt.dnd.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 /**
  * MainFrame is the main UI element for TaxonValid: it displays the input file
@@ -47,6 +49,7 @@ public class MainFrame {
 	JComboBox operations = new JComboBox();
 	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
 	DarwinCSV currentCSV = null;
+	MatchInformationPanel matchInfoPanel;
 
 	public MainFrame() {
 		setupFrame();
@@ -221,9 +224,37 @@ public class MainFrame {
 			public Object getValueAt(int row, int col) { return ""; }
 		};
 		table.setModel(blankDataModel);
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		table.setShowGrid(true);
+		table.setSelectionBackground(Color.ORANGE);
+		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				System.err.println("OK: " + currentCSV.getMatcher());
+				
+				if(currentCSV == null || currentCSV.getMatcher() == null)
+					return;
+				
+				System.err.println("Looking up!");
+				
+				// 1. Figure out what the selected cell is.
+				Object o = table.getModel().getValueAt(table.getSelectedRow(), table.getSelectedColumn());
+				if(o.getClass().equals(Name.class)) {
+					matchInfoPanel.setMatchInformation(currentCSV.getMatcher(), (Name) o);
+				}
+			}
+		});
 		
 		JPanel panel = new JPanel();
 		panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+		
+		JPanel internal = new JPanel();
+		
+		matchInfoPanel = new MatchInformationPanel();
+		internal.setLayout(new BorderLayout());
+		internal.add(matchInfoPanel, BorderLayout.SOUTH);
+		internal.add(new JScrollPane(table));
 		
 		panel.setLayout(new BorderLayout());
 		panel.add(operations, BorderLayout.NORTH);
@@ -255,7 +286,8 @@ public class MainFrame {
 		
 		operations.addItem("No file loaded.");
 		
-		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, new JScrollPane(table), panel);
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, internal, panel);
+		split.setResizeWeight(1);
 		mainFrame.add(split);
 		mainFrame.pack();
 		

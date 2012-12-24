@@ -339,8 +339,8 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		if(getColumnClass(columnIndex) == Name.class) {
 			return new Name(data.get(rowIndex)[columnIndex]);
-		} else {	
-		return data.get(rowIndex)[columnIndex];
+		} else {
+			return data.get(rowIndex)[columnIndex];
 		}
 	}
 
@@ -370,7 +370,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         c.setBackground(Color.WHITE);
-        
+		
 		if(column == col_family || column == col_scientificname || column == col_acceptedname || column == col_canonicalname) {
 			Name name = (Name) value;
 			String str = name.toString();
@@ -394,15 +394,23 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			}
 		}
 		
+		if(hasFocus)
+			c.setBackground(c.getBackground().darker());
+		
 		return c;
 	}
 
 	private DarwinCSV matcher = null;
 	public void match(DarwinCSV csv_matcher) {
 		matcher = csv_matcher;
+		System.err.println("Matcher set to " + matcher);
 		for(TableModelListener tmi: tmiList) {
 			tmi.tableChanged(new TableModelEvent(this, 0, getRowCount()));
 		}
+	}
+	
+	public DarwinCSV getMatcher() {
+		return matcher;
 	}
 
 	public boolean hasName(String str) {
