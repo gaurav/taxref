@@ -40,23 +40,48 @@ import javax.swing.table.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class RowIndex implements TableModel {
+	private UUID uuid;
+	private int row_count = 0;		// used only for UUID generation.
+	
 	// TODO: is LinkedLists the best way to do this? Remember that
 	// neither rows nor columns are updated much after the first
 	// run through.
 	private List<Row> rows = new LinkedList<Row>();
 	private List<String> columns = new LinkedList<String>();
+	private List<String> columnsLowercase = new LinkedList<String>();
 	private HashMap<String, Class> columnClasses = new HashMap<String, Class>();
 	
+	private HashMap<Name, List<Row>> nameIndex = new HashMap<Name, List<Row>>();
+	
 	public RowIndex() {
-		
+		uuid = UUID.randomUUID();
 	}
 	
 	public Row createRow() {
-		return new Row(this);
+		return new Row(this, uuid + " (row #" + (++row_count) + ")");
 	}
 	
 	public void addRow(Row row) {
 		rows.add(row);
+	}
+	
+	public void addName(Row row, Name name) {
+		// Index the names.
+		for(int x = 0; x < getColumnCount(); x++) {
+			if(getColumnClass(x).equals(Name.class)) {
+				Name nameToIndex = ((Name) row.get(getColumnName(x)));
+				
+				if(!nameIndex.containsKey(nameToIndex)) {
+					nameIndex.put(nameToIndex, new LinkedList<Row>());
+				}
+				
+				nameIndex.get(nameToIndex).add(row);
+			}
+		}
+	}
+	
+	public Set<Name> getAllNames() {
+		return nameIndex.keySet();
 	}
 	
 	public void addColumn(String colName) {
@@ -64,14 +89,21 @@ public class RowIndex implements TableModel {
 	}
 	
 	public void addColumn(String colName, Class colClass) {
-		if(!columns.contains(colName)) {
+		if(!columnsLowercase.contains(colName.toLowerCase())) {
 			columns.add(colName);
+			columnsLowercase.add(colName.toLowerCase());
 			columnClasses.put(colName, colClass);
+		} else {
+			throw new RuntimeException("Can't add the same column twice, sorry! (new column name: '" + colName + "')");
 		}
 	}
 	
+	public boolean containsColumn(String colName) {
+		return columnsLowercase.contains(colName.toLowerCase());
+	}
+	
 	public List<Object> getColumn(String colName) {
-		if(!columns.contains(colName)) {
+		if(!columnsLowercase.contains(colName)) {
 			return null;
 		} else {
 			ArrayList<Object> column = new ArrayList<Object>();
@@ -105,6 +137,10 @@ public class RowIndex implements TableModel {
 
 	@Override
 	public int getRowCount() {
+		return rows.size();
+	}
+	
+	public int size() {
 		return rows.size();
 	}
 

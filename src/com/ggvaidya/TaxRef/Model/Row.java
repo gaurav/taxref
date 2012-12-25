@@ -58,6 +58,10 @@ public class Row {
 	public void put(String key, Object value) {
 		data.put(key, value);
 		index.addColumn(key);
+		
+		if(Name.class.isAssignableFrom(value.getClass())) {
+			index.addName(this, (Name) value);
+		}
 	}
 	
 	public Object get(String key) {

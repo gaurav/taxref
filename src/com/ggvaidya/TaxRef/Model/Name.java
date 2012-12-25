@@ -23,6 +23,10 @@
 
 package com.ggvaidya.TaxRef.Model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.table.*;
 
 /**
@@ -30,31 +34,42 @@ import javax.swing.table.*;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class Name implements TableCellRenderer {
+public class Name {
 	String namestring = "";
 	String monomial = null;
 	String genus = null;
 	String species = null;
 	String subspecies = null;
+	String generatedFrom = null;
 	
 	public Name(String str) {
+		this(str, null);
+	}
+	
+	public Name(String str, String generatedFrom) {
 		namestring = str;
 		
-		// TODO: Parse out the authority string by this point.
-		
-		String[] substrings = str.split("\\s+");
-		int count = substrings.length;
-		
-		if(count == 1) {
-			monomial = substrings[0];
-		} else if(count == 2) {
-			genus = substrings[0];
-			species = substrings[1];
-		} else if(count == 3) {
-			genus = substrings[0];
-			species = substrings[1];
-			subspecies = substrings[2];
+		Pattern p_canonical = Pattern.compile("^\\s*([A-Z][a-z]+)\\s+([a-z]+)(?:\\s+([a-z]+)?)\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
+		Pattern p_monomial = Pattern.compile("^\\s*([A-Z](?:[a-z]+|[A-Z]+))\\b");
+				
+		Matcher m = p_canonical.matcher(namestring);
+		// System.err.println(m.find() + " between '" + row[col_scientificname] + "' and '" + p_canonical + "'");
+		if(m.lookingAt()) {
+			genus = m.group(1);
+			species = m.group(2);
+			subspecies = m.group(3);
+		} else {
+			m = p_monomial.matcher(namestring);
+			if(m.lookingAt()) {
+				monomial = m.group(1);
+			} else {
+				monomial = namestring;
+			}
 		}
+	}
+	
+	public String getGeneratedFrom() {
+		return generatedFrom;
 	}
 	
 	public String getGenus() {
