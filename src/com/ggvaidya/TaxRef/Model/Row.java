@@ -56,8 +56,9 @@ public class Row {
 	}
 
 	public void put(String key, Object value) {
-		data.put(key, value);
-		index.addColumn(key);
+		data.put(key.toLowerCase(), value);
+		if(!index.containsColumn(key))
+			index.addColumn(key);
 		
 		if(Name.class.isAssignableFrom(value.getClass())) {
 			index.addName(this, (Name) value);
@@ -65,7 +66,7 @@ public class Row {
 	}
 	
 	public Object get(String key) {
-		return data.get(key);
+		return data.get(key.toLowerCase());
 	}
 	
 	public void createNewColumn(String newColumn, String fromColumn, MapOperation op) {
@@ -86,5 +87,16 @@ public class Row {
 				return value;
 			}
 		});
+	}
+
+	public String[] asArray() {
+		String[] results = new String[index.getColumnCount()];
+		
+		int x = 0;
+		for(String colName: index.getColumnNames()) {
+			results[x] = get(colName).toString();
+		}
+		
+		return results;
 	}
 }

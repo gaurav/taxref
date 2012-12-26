@@ -35,6 +35,9 @@ import org.apache.commons.lang3.*;
 import java.util.regex.*;
 import java.text.*;
 import com.ggvaidya.TaxRef.Common.*;
+import java.lang.reflect.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A DarwinCSV is a CSV file which contains biodiversity data.
@@ -45,7 +48,7 @@ import com.ggvaidya.TaxRef.Common.*;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class DarwinCSV implements TableModel, TableCellRenderer {
+public class DarwinCSV {
 	private File file;
 	private int filetype;
 	private RowIndex index;
@@ -66,6 +69,7 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		"infraspecificEpithet", "subspecies"
 	};
 	
+	@Override
 	public String toString() {
 		String type = "CSV";
 		if(filetype == FILE_TAB_DELIMITED) {
@@ -74,11 +78,15 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			type = "semicolon-delimited";
 		}
 		
-		return "DarwinCSV from " + type + " file '" + file.getAbsolutePath() + "' containing " + rowIndex.size() + " rows";
+		return "DarwinCSV from " + type + " file '" + file.getAbsolutePath() + "' containing " + index.size() + " rows";
 	}
 	
 	public DarwinCSV(File file, int file_type) throws IOException {
 		setup(file, file_type);
+	}
+	
+	public RowIndex getRowIndex() {
+		return index;
 	}
 	
 	/**
@@ -130,29 +138,60 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		}
 		
 		List<String[]> data = csvr.readAll();
+		
+		double time1 = System.currentTimeMillis();
 		for(String[] rowArray: data) {
 			Row row = index.createRow();
 			
 			int columnIndex = 0;
 			for(String field: rowArray) {
-				row.put(columnNames.get(columnIndex), field);
+				// Cast this back to whatever Class it's supposed to be.
+				Class colClass = index.getColumnClass(columnIndex);
+				Object value = field;
+				
+				
+				try {
+					Constructor c = colClass.getDeclaredConstructor(String.class);
+					value = c.newInstance(field);
+					
+					// Ignore: just use field.
+					
+				} catch (InstantiationException ex) {
+				} catch (IllegalAccessException ex) {
+				} catch (IllegalArgumentException ex) {
+				} catch (InvocationTargetException ex) {
+				} catch(NoSuchMethodException ex) {
+				}
+				
+				row.put(columnNames.get(columnIndex), value);
+				
 				columnIndex++;
 			}
 		}
+		double time2 = System.currentTimeMillis();
+		System.err.println("Time for construction: " + (time2 - time1) + " ms");
 		
 		if(!index.containsColumn("canonicalname")) {
 			if(index.containsColumn("scientificname")) {
+				index.addColumn("canonicalname", Name.class);
 				index.createNewColumn("canonicalname", "scientificname", new MapOperation() {
 					@Override
 					public Object mapTo(Object value) {
 						Name n = (Name) value;
 						
-						return n.getGenus() + " " + n.getSpecies();
+						// System.err.println("We got: " + value);
+						
+						if(n == null) return "";
+						
+						return new Name(n.getScientificName());
 					}
 				});
 			}
 			// Err, how do we do this for genus/species?
 		}
+		
+		double time3 = System.currentTimeMillis();
+		System.err.println("Time for canonical name calculation: " + (time3 - time2) + " ms");
 		
 		file = f;
 		filetype = file_type;
@@ -204,61 +243,6 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			}
 			*/
 
-	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellRenderer();
-	
-	@Override
-	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-        c.setBackground(Color.WHITE);
-		
-		if(Name.class.isAssignableFrom(value.getClass())) {
-			Name name = (Name) value;
-			String str = name.toString();
-			
-			if(matcher == null) {
-				if(str.length() == 0) {
-					c.setBackground(Color.GRAY);
-				} else {
-					c.setBackground(new Color(137, 207, 230));
-				}
-			} else {
-				if(str.length() == 0) {
-					c.setBackground(Color.GRAY);
-				} else if(matcher.hasName(str)) {
-					c.setBackground(new Color(0, 128, 0));
-				} else if(matcher.hasName(name.getGenus())) {
-					c.setBackground(new Color(255, 117, 24));
-				} else {
-					c.setBackground(new Color(226, 6, 44));
-				}
-			}
-		}
-		
-		if(hasFocus)
-			c.setBackground(c.getBackground().darker());
-		
-		return c;
-	}
-
-	private DarwinCSV matcher = null;
-	public void match(DarwinCSV csv_matcher) {
-		matcher = csv_matcher;
-		System.err.println("Matcher set to " + matcher);
-		for(TableModelListener tmi: tmiList) {
-			tmi.tableChanged(new TableModelEvent(this, 0, getRowCount()));
-		}
-	}
-	
-	public DarwinCSV getMatcher() {
-		return matcher;
-	}
-
-	public boolean hasName(String str) {
-		if(str == null)
-			return false;
-		return names.contains(str.trim().toLowerCase());
-	}
-
 	public void saveToFile(File file, int type) throws IOException {
 		CSVWriter writer = null;
 		
@@ -268,16 +252,15 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 			throw new UnsupportedOperationException("File type " + type + " not yet supported!");
 		}
 		
-		writer.writeNext(columns.toArray(new String[columns.size()]));
-		writer.writeAll(data);
+		writer.writeNext(index.getColumnNames().toArray(new String[index.getColumnCount()]));
+		for(Row r: index.getRows()) {
+			writer.writeNext(r.asArray());
+		}
 		writer.flush();
 		writer.close();
 	}
 
-	public int getCanonicalNameColumn() {
-		return col_canonicalname;
-	}
-
+	/*
 	public String generateTextSummaryOfColumn(String colName) {
 		StringBuilder builder = new StringBuilder();
 		
@@ -377,37 +360,5 @@ public class DarwinCSV implements TableModel, TableCellRenderer {
 		
 		return builder.toString();
 	}
-	
-	private String number_and_percentage(int number, int total) {
-		return number + "\t" + percentage(number, total) + "%";
-	}
-	
-	NumberFormat nf = null;
-	private String percentage(double d1, double d2) {
-		if(nf == null) {
-			nf = NumberFormat.getNumberInstance();
-			nf.setMinimumFractionDigits(1);
-		}
-		
-		return nf.format((d1/d2)*100);
-	}
-	
-	private String percentage(double d1) {
-		return percentage(d1, 1.0d);
-	} 
-	
-	public String getColumnInformation(int columnIndex) {
-		if(columnIndex == -1)
-			return "None";
-		
-		if(columnIndex < 0 || columnIndex > columns.size())
-			return "Invalid column identifier";
-		
-		String ret = columns.get(columnIndex) + " (#" + (columnIndex + 1) + ")";
-		
-		if(columnIndex == col_canonicalname && colsUsedToGenerateCanonicalName != null)
-			ret += " [autogenerated from " + colsUsedToGenerateCanonicalName + "]";
-		
-		return ret;
-	}
+	* */
 }

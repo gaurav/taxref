@@ -192,4 +192,25 @@ public class RowIndex implements TableModel {
 		listeners.remove(l);
 	}
 
+	/* Matching code */
+	public RowIndexMatch matchAgainst(RowIndex against) {
+		return new RowIndexMatch(this, against);
+	}
+
+	public List<String> getColumnNames() {
+		return new ArrayList(columns);
+	}
+	
+	public boolean hasName(Name n) {
+		return nameIndex.containsKey(n);
+	}
+	
+	public boolean hasName(String str) {
+		return hasName(new Name(str));
+	}
+
+	public List<Row> getRows() {
+		return new ArrayList(rows);
+	}
+
 }

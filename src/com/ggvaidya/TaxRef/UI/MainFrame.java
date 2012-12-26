@@ -22,20 +22,19 @@
  */
 package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.*;
+import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
 import java.awt.datatransfer.*;
-import java.io.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EtchedBorder;
-import javax.swing.table.*;
 import java.awt.dnd.*;
+import java.awt.event.*;
+import java.io.*;
+import javax.swing.*;
+import javax.swing.border.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.*;
 
 /**
  * MainFrame is the main UI element for TaxonValid: it displays the input file
@@ -43,12 +42,13 @@ import javax.swing.event.ListSelectionListener;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class MainFrame {
+public class MainFrame implements TableCellRenderer {
 	JFrame mainFrame = new JFrame(TaxRef.getName() + "/" + TaxRef.getVersion());
 	JTable table = new JTable();
 	JComboBox operations = new JComboBox();
 	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
 	DarwinCSV currentCSV = null;
+	RowIndexMatch currentMatch = null; 
 	MatchInformationPanel matchInfoPanel;
 
 	public MainFrame() {
@@ -61,14 +61,14 @@ public class MainFrame {
 	private void setCurrentCSV(DarwinCSV csv) {
 		currentCSV = csv;
 		table.removeAll();
-		table.setDefaultRenderer(Name.class, currentCSV);	
-		table.setModel(currentCSV);
+		table.setDefaultRenderer(Name.class, this);
+		table.setModel(currentCSV.getRowIndex());
 		table.repaint();
 		matchInfoPanel.matchChanged(currentCSV);
 	}
 	
 	private void matchAgainst(DarwinCSV against) {
-		currentCSV.match(against);
+		currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
 		matchInfoPanel.matchChanged(currentCSV);
 	}
 	
@@ -86,7 +86,7 @@ public class MainFrame {
 		}
 		
 		operations.addItem("Summarize name identification");
-		for(String column: currentCSV.columns()) {
+		for(String column: currentCSV.getRowIndex().getColumnNames()) {
 			operations.addItem("Summarize column '" + column + "'");
 		}
 	}
@@ -120,6 +120,9 @@ public class MainFrame {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin tab-delimited file ...", FileDialog.LOAD);
 				fd.setVisible(true);
+				if(fd.getFile() == null)
+					return;
+				
 				File file = new File(fd.getFile());
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
@@ -169,8 +172,6 @@ public class MainFrame {
 		JMenuItem miMatchCSV = new JMenuItem(new AbstractAction("Match against CSV") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
-				
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file for matching ...", FileDialog.LOAD);
 				fd.setVisible(true);
 				File file = new File(fd.getFile());
@@ -239,12 +240,11 @@ public class MainFrame {
 		table.setShowGrid(true);
 		table.setSelectionBackground(Color.ORANGE);
 		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				// System.err.println("OK: " + currentCSV.getMatcher());
 				
-				if(currentCSV == null || currentCSV.getMatcher() == null)
+				if(currentCSV == null)
 					return;
 				
 				// System.err.println("Looking up!");
@@ -257,13 +257,13 @@ public class MainFrame {
 			}
 		});
 		
-		JPanel panel = new JPanel();
-		panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+	JPanel panel = new JPanel();
+	panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
 		
-		JPanel internal = new JPanel();
+	JPanel internal = new JPanel();
 		
-		matchInfoPanel = new MatchInformationPanel();
-		internal.setLayout(new BorderLayout());
+	matchInfoPanel = new MatchInformationPanel();
+	internal.setLayout(new BorderLayout());
 		internal.add(matchInfoPanel, BorderLayout.SOUTH);
 		internal.add(new JScrollPane(table));
 		
@@ -287,7 +287,7 @@ public class MainFrame {
 				}
 				
 				if(currentCSV != null)
-					results.setText(currentCSV.generateTextSummaryOfColumn(colName));
+					results.setText("O NO");
 				else
 					results.setText("No file loaded.");
 				
@@ -342,4 +342,42 @@ public class MainFrame {
 			}
 		}));
 	}
+	
+	
+	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellRenderer();
+	
+	@Override
+	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        c.setBackground(Color.WHITE);
+		
+		if(Name.class.isAssignableFrom(value.getClass())) {
+			Name name = (Name) value;
+			String str = name.toString();
+			
+			if(currentMatch == null) {
+				if(str.length() == 0) {
+					c.setBackground(Color.GRAY);
+				} else {
+					c.setBackground(new Color(137, 207, 230));
+				}
+			} else {
+				if(str.length() == 0) {
+					c.setBackground(Color.GRAY);
+				} else if(currentMatch.getAgainst().hasName(str)) {
+					c.setBackground(new Color(0, 128, 0));
+				} else if(currentMatch.getAgainst().hasName(name.getGenus())) {
+					c.setBackground(new Color(255, 117, 24));
+				} else {
+					c.setBackground(new Color(226, 6, 44));
+				}
+			}
+		}
+		
+		if(hasFocus)
+			c.setBackground(c.getBackground().darker());
+		
+		return c;
+	}
+
 }

@@ -70,8 +70,7 @@ public class MatchInformationPanel extends JPanel {
 	
 	/* I have a horrible feeling that some day this is going to become an interface. */
 	public void matchChanged(DarwinCSV csv) {
-		source = csv;
-		match = csv.getMatcher();
+		
 	}
 	
 	public void matchSelected(Name matchedName) {
