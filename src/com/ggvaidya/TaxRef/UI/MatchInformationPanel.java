@@ -33,8 +33,7 @@ import javax.swing.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class MatchInformationPanel extends JPanel {
-	private DarwinCSV source;
-	private DarwinCSV match;
+	private RowIndexMatch match;
 	
 	private JTextField tf_name_to_match = new JTextField();
 	private JTextField tf_accepted_name = new JTextField();
@@ -69,11 +68,20 @@ public class MatchInformationPanel extends JPanel {
 	}
 	
 	/* I have a horrible feeling that some day this is going to become an interface. */
-	public void matchChanged(DarwinCSV csv) {
+	public void matchChanged(RowIndexMatch match) {
+		this.match = match;
 		
+		tf_name_to_match.setText("");
+		tf_accepted_name.setText("");
+		tf_taxonid.setText("");
+		tf_match_summary.setText("");
 	}
 	
 	public void matchSelected(Name matchedName) {
-		
+		// matchedName is on RowIndexMatch.
+		tf_name_to_match.setText("");
+		tf_accepted_name.setText("");
+		tf_taxonid.setText("");
+		tf_match_summary.setText("");
 	}
 }

@@ -23,6 +23,8 @@
 package com.ggvaidya.TaxRef.UI;
 
 import com.ggvaidya.TaxRef.*;
+import com.ggvaidya.TaxRef.Common.DelayAbortedException;
+import com.ggvaidya.TaxRef.Common.DelayCallback;
 import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
@@ -47,10 +49,14 @@ public class MainFrame implements TableCellRenderer {
 	JTable table = new JTable();
 	JComboBox operations = new JComboBox();
 	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
+	JProgressBar progressBar = new JProgressBar(0, 100);
+	
 	DarwinCSV currentCSV = null;
 	RowIndexMatch currentMatch = null; 
 	MatchInformationPanel matchInfoPanel;
-
+	
+	
+	
 	public MainFrame() {
 		setupFrame();
 
@@ -60,21 +66,21 @@ public class MainFrame implements TableCellRenderer {
 	
 	private void setCurrentCSV(DarwinCSV csv) {
 		currentCSV = csv;
+		operations.removeAllItems();
 		table.removeAll();
 		table.setDefaultRenderer(Name.class, this);
 		table.setModel(currentCSV.getRowIndex());
 		table.repaint();
-		matchInfoPanel.matchChanged(currentCSV);
+		matchInfoPanel.matchChanged(null);
 	}
 	
 	private void matchAgainst(DarwinCSV against) {
 		currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
-		matchInfoPanel.matchChanged(currentCSV);
+		currentMatch = new RowIndexMatch(currentCSV.getRowIndex(), against.getRowIndex());
+		matchInfoPanel.matchChanged(currentMatch);
 	}
 	
 	private void loadFile(File file, int type) {
-		operations.removeAllItems();
-		
 		try {
 			setCurrentCSV(new DarwinCSV(file, type));
 
@@ -104,12 +110,29 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file ...", FileDialog.LOAD);
 				fd.setVisible(true);
-				File file = new File(fd.getFile());
+				final File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
+				} else if(fd.getFile() != null) {
+					file = new File(fd.getFile());
+				} else {
+					return;
 				}
 				
-				loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+				progressBar.setIndeterminate(true);
+				new SwingWorker() {
+					@Override
+					protected Object doInBackground() throws Exception {
+						loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+						
+						return null;
+					}
+					
+					@Override
+					protected void done() {
+						progressBar.setIndeterminate(false);
+					}
+				}.execute();
 			}
 		});
 		fileMenu.add(miFileOpenCSV);
@@ -181,7 +204,6 @@ public class MainFrame implements TableCellRenderer {
 				
 				try {
 					DarwinCSV csv_matcher = new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
-					
 					matchAgainst(csv_matcher);
 					
 				} catch (IOException ex) {
@@ -257,19 +279,20 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		
-	JPanel panel = new JPanel();
-	panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+		JPanel panel = new JPanel();
+		panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
 		
-	JPanel internal = new JPanel();
+		JPanel internal = new JPanel();
 		
-	matchInfoPanel = new MatchInformationPanel();
-	internal.setLayout(new BorderLayout());
+		matchInfoPanel = new MatchInformationPanel();
+		internal.setLayout(new BorderLayout());
 		internal.add(matchInfoPanel, BorderLayout.SOUTH);
 		internal.add(new JScrollPane(table));
 		
 		panel.setLayout(new BorderLayout());
 		panel.add(operations, BorderLayout.NORTH);
 		panel.add(new JScrollPane(results));
+		panel.add(progressBar, BorderLayout.SOUTH);
 		
 		operations.addItemListener(new ItemListener() {
 			@Override
@@ -295,8 +318,8 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		
-		operations.addItem("No file loaded.");
-		
+		operations.addItem("No file loaded.");	
+	
 		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, internal, panel);
 		split.setResizeWeight(1);
 		mainFrame.add(split);
