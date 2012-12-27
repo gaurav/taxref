@@ -42,7 +42,7 @@ public class ColumnMatch {
 		this.against = againstRI;
 		
 		for(Object o: values) {
-			System.err.println("Column match (" + colName + "): " + o);
+			// System.err.println("Column match (" + colName + "): " + o);
 			
 			if(Name.class.isAssignableFrom(o.getClass())) {
 				Name name = (Name) o;

@@ -46,11 +46,16 @@ public class RowIndexMatch {
 		
 		int columnIndex = 0;
 		for(String colName: from.getColumnNames()) {
-			System.err.println("Starting row index match: " + colName);
+			// System.err.println("Starting row index match: " + colName);
 			
 			List<Object> values = from.getColumn(colName);
 			
-			columnMatches.add(new ColumnMatch(colName, values, against));
+			// Only do column matches on name columns ... for now.
+			if(Name.class.isAssignableFrom(from.getColumnClass(columnIndex))) {
+				columnMatches.add(new ColumnMatch(colName, values, against));
+			} else {
+				columnMatches.add(null);
+			}
 			
 			columnIndex++;
 		}

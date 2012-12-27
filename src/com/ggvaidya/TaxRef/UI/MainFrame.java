@@ -34,6 +34,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
+import java.util.*;
 
 /**
  * MainFrame is the main UI element for TaxonValid: it displays the input file
@@ -42,7 +43,7 @@ import javax.swing.table.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class MainFrame implements TableCellRenderer {
-	JFrame mainFrame = new JFrame(TaxRef.getName() + "/" + TaxRef.getVersion());
+	JFrame mainFrame;
 	JTable table = new JTable();
 	JComboBox operations = new JComboBox();
 	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
@@ -52,10 +53,11 @@ public class MainFrame implements TableCellRenderer {
 	RowIndexMatch currentMatch = null; 
 	MatchInformationPanel matchInfoPanel;
 	
-	
+	String basicTitle = TaxRef.getName() + "/" + TaxRef.getVersion();
 	
 	public MainFrame() {
 		setupFrame();
+		setupMemoryMonitor();
 
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainFrame.setVisible(true);
@@ -68,16 +70,32 @@ public class MainFrame implements TableCellRenderer {
 		table.setDefaultRenderer(Name.class, this);
 		table.setModel(currentCSV.getRowIndex());
 		table.repaint();
-		matchInfoPanel.matchChanged(null);
+		matchAgainst(null);
 	}
 	
 	private void matchAgainst(DarwinCSV against) {
-		System.err.println("Here we are");
-		// currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
-		// matchInfoPanel.matchChanged(currentMatch);
+		System.err.println("matchAgainst: " + against);
+		
+		if(against == null) {
+			currentMatch = null;
+			table.repaint();
+			return;
+		}
+		
+		long t1 = System.currentTimeMillis();
+		currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
+		table.repaint();
+		matchInfoPanel.matchChanged(currentMatch);
+		long t2 = System.currentTimeMillis();
+		System.err.println("Finished: " + (t2 - t1) + " ms");
 	}
 	
 	private void loadFile(File file, int type) {
+		if(file == null) {
+			mainFrame.setTitle(basicTitle);
+			return;
+		}
+		
 		try {
 			setCurrentCSV(new DarwinCSV(file, type));
 
@@ -92,6 +110,8 @@ public class MainFrame implements TableCellRenderer {
 		for(String column: currentCSV.getRowIndex().getColumnNames()) {
 			operations.addItem("Summarize column '" + column + "'");
 		}
+		
+		mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
 	}
 	
 	private JMenuBar setupMenuBar() {
@@ -133,6 +153,26 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		fileMenu.add(miFileOpenCSV);
+		
+		/* File -> Open CSV without UI */
+		JMenuItem miFileOpenCSVnoUI = new JMenuItem(new AbstractAction("Open CSV without UI") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file ...", FileDialog.LOAD);
+				fd.setVisible(true);
+				final File file;
+				if(fd.getDirectory() != null) {
+					file = new File(fd.getDirectory(), fd.getFile());
+				} else if(fd.getFile() != null) {
+					file = new File(fd.getFile());
+				} else {
+					return;
+				}
+				
+				loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+			}
+		});
+		fileMenu.add(miFileOpenCSVnoUI);
 		
 		/* File -> Open tab-delimited */
 		JMenuItem miFileOpenTab = new JMenuItem(new AbstractAction("Open tab-delimited") {
@@ -215,11 +255,8 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				try {
-					System.err.println("We are here");
 					DarwinCSV csv_matcher = new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
-					System.err.println("eep");
 					matchAgainst(csv_matcher);
-					System.err.println("argh");
 					
 				} catch (IOException ex) {
 					MessageBox.messageBox(mainFrame, "Unable to open file '" + file + "'", "UNable to open file '" + file + "': " + ex);
@@ -264,6 +301,7 @@ public class MainFrame implements TableCellRenderer {
 	}
 
 	private void setupFrame() {
+		mainFrame = new JFrame(basicTitle);
 		mainFrame.setJMenuBar(setupMenuBar());
 		
 		TableModel blankDataModel = new AbstractTableModel() {
@@ -304,6 +342,8 @@ public class MainFrame implements TableCellRenderer {
 		internal.add(matchInfoPanel, BorderLayout.SOUTH);
 		internal.add(new JScrollPane(table));
 		
+		progressBar.setStringPainted(true);
+		
 		panel.setLayout(new BorderLayout());
 		panel.add(operations, BorderLayout.NORTH);
 		panel.add(new JScrollPane(results));
@@ -334,7 +374,7 @@ public class MainFrame implements TableCellRenderer {
 		});
 		
 		operations.addItem("No file loaded.");	
-	
+		
 		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, internal, panel);
 		split.setResizeWeight(1);
 		mainFrame.add(split);
@@ -381,6 +421,33 @@ public class MainFrame implements TableCellRenderer {
 		}));
 	}
 	
+	private java.util.Timer memoryTimer;
+	private void setupMemoryMonitor() {
+		memoryTimer = new java.util.Timer("Memory monitor", true);
+		
+		memoryTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						long value = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024);
+						long max = Runtime.getRuntime().maxMemory() / (1024 * 1024);
+						int percentage = (int)(((double)value)/max*100);
+						
+						progressBar.setMinimum(0);
+						progressBar.setMaximum(100);
+						progressBar.setValue(percentage);
+						
+						progressBar.setString(value + " MB out of " + max + " MB (" + percentage + "%)");
+					}
+					
+				});
+			}
+		
+		}, new Date(), 5000);	// Every five seconds.
+	}
+	
 	
 	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellRenderer();
 	
@@ -388,6 +455,11 @@ public class MainFrame implements TableCellRenderer {
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         c.setBackground(Color.WHITE);
+		
+		if(value == null) {
+			c.setBackground(Color.GRAY);
+			return c;
+		}
 		
 		if(Name.class.isAssignableFrom(value.getClass())) {
 			Name name = (Name) value;
@@ -402,11 +474,13 @@ public class MainFrame implements TableCellRenderer {
 			} else {
 				int score = currentMatch.getColumnMatchScore(column, value);
 				
+				// System.err.println("Score on " + value + ": " + score);
+				
 				if(str.length() == 0) {
 					c.setBackground(Color.GRAY);
-				} else if(currentMatch.getAgainst().hasName(str)) {
+				} else if(score >= 100) {
 					c.setBackground(new Color(0, 128, 0));
-				} else if(currentMatch.getAgainst().hasName(name.getGenus())) {
+				} else if(score > 50) {
 					c.setBackground(new Color(255, 117, 24));
 				} else {
 					c.setBackground(new Color(226, 6, 44));

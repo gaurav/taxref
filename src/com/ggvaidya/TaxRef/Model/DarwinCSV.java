@@ -110,8 +110,8 @@ public class DarwinCSV {
 		}
 		
 		// Reset the row index.
-		index = new RowIndex();
 		List<String> listFieldNamesForNames = Arrays.asList(fieldNamesForNames);
+		List<Class> colClasses = new ArrayList<Class>();
 		
 		CSVReader csvr = new CSVReader(new BufferedReader(new FileReader(f)), separator);
 		List<String> columnNames = new ArrayList<String>();
@@ -134,8 +134,10 @@ public class DarwinCSV {
 			}
 			
 			columnNames.add(column);
-			index.addColumn(column, colClass);
+			colClasses.add(colClass);
 		}
+		
+		index = new RowIndex(columnNames, colClasses);
 		
 		// System.err.println("Reading all.");
 		List<String[]> data = csvr.readAll();
@@ -143,7 +145,7 @@ public class DarwinCSV {
 		
 		double time1 = System.currentTimeMillis();
 		for(String[] rowArray: data) {
-			Row row = index.createRow();
+			Object[] row = new Object[rowArray.length];
 			
 			int columnIndex = 0;
 			for(String field: rowArray) {
@@ -167,7 +169,7 @@ public class DarwinCSV {
 				}
 				*/
 				
-				// Class colClass = index.getColumnClass(columnIndex);
+				Class colClass = index.getColumnClass(columnIndex);
 				Object value = field;
 				
 				// Special case: for Name, make it into a Name.
@@ -175,34 +177,36 @@ public class DarwinCSV {
 				//	value = Name.getName(field);
 				//}
 				
-				row.put(columnNames.get(columnIndex), value);
+				if(Name.class.isAssignableFrom(colClass)) {
+					value = Name.getName(field);
+				}
+				
+				row[columnIndex] = value;
 				
 				columnIndex++;
 			}
+			
+			index.addRow(row);
 		}
 		double time2 = System.currentTimeMillis();
 		System.err.println("Time for construction: " + (time2 - time1) + " ms");
 		
-		/*
 		if(!index.containsColumn("canonicalname")) {
 			if(index.containsColumn("scientificname")) {
-				index.addColumn("canonicalname", Name.class);
-				index.createNewColumn("canonicalname", "scientificname", new MapOperation() {
+				index.setColumnClass("canonicalname", Name.class);
+				
+				index.createNewColumn("canonicalname", index.getColumnIndex("scientificname") + 1, "scientificname", new MapOperation() {
 					@Override
 					public Object mapTo(Object value) {
 						Name n = (Name) value;
 						
-						// System.err.println("We got: " + value);
-						
 						if(n == null) return "";
-						
 						return Name.getName(n.getScientificName());
 					}
 				});
 			}
 			// Err, how do we do this for genus/species?
 		}
-		*/
 		
 		double time3 = System.currentTimeMillis();
 		System.err.println("Time for canonical name calculation: " + (time3 - time2) + " ms");
@@ -267,8 +271,16 @@ public class DarwinCSV {
 		}
 		
 		writer.writeNext(index.getColumnNames().toArray(new String[index.getColumnCount()]));
-		for(Row r: index.getRows()) {
-			writer.writeNext(r.asArray());
+		for(Object[] row: index.getRows()) {
+			String[] strings = new String[row.length];
+			
+			int x = 0;
+			for(Object o: row) {
+				strings[x] = o.toString();
+				x++;
+			}
+			
+			writer.writeNext(strings);
 		}
 		writer.flush();
 		writer.close();
