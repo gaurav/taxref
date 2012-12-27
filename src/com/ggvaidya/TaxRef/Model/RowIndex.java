@@ -201,6 +201,10 @@ public class RowIndex implements TableModel {
 		return new ArrayList(columns);
 	}
 	
+	public List<String> getColumnNamesLowercase() {
+		return new ArrayList(columnsLowercase);
+	}
+	
 	public boolean hasName(Name n) {
 		return nameIndex.containsKey(n);
 	}

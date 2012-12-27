@@ -146,12 +146,27 @@ public class MainFrame implements TableCellRenderer {
 				if(fd.getFile() == null)
 					return;
 				
-				File file = new File(fd.getFile());
+				final File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
+				} else {
+					file = new File(fd.getFile());
 				}
 				
-				loadFile(file, DarwinCSV.FILE_TAB_DELIMITED);
+				progressBar.setIndeterminate(true);
+				new SwingWorker() {
+					@Override
+					protected Object doInBackground() throws Exception {
+						loadFile(file, DarwinCSV.FILE_TAB_DELIMITED);
+						
+						return null;
+					}
+					
+					@Override
+					protected void done() {
+						progressBar.setIndeterminate(false);
+					}
+				}.execute();
 			}
 		});
 		fileMenu.add(miFileOpenTab);

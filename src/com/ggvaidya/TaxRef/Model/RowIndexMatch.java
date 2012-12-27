@@ -23,6 +23,8 @@
 
 package com.ggvaidya.TaxRef.Model;
 
+import java.util.*;
+
 /**
  * Carries out and stores the result of a match.
  * These are joins basically.
@@ -32,19 +34,41 @@ package com.ggvaidya.TaxRef.Model;
 public class RowIndexMatch {
 	private RowIndex from;
 	private RowIndex against;
+	private List<String> columnNamesLowercase;
+	private List<ColumnMatch> columnMatches;
 	
 	public RowIndexMatch(RowIndex from, RowIndex against) {
 		this.from = from;
 		this.against = against;
 		
-		doMatch();
+		columnNamesLowercase = from.getColumnNamesLowercase();
+		columnMatches = new LinkedList<ColumnMatch>();
+		
+		int columnIndex = 0;
+		for(String colName: from.getColumnNames()) {
+			List<Object> values = from.getColumn(colName);
+			
+			columnMatches.add(new ColumnMatch(colName, values, against));
+			
+			columnIndex++;
+		}
 	}
 	
-	private void doMatch() {
-		
+	public RowIndex getFrom() {
+		return from;
 	}
-
+	
 	public RowIndex getAgainst() {
 		return against;
+	}
+	
+	public ColumnMatch getColumnMatch(String colName) {
+		int index = columnNamesLowercase.indexOf(colName.toLowerCase());
+		
+		return getColumnMatch(index);
+	}
+	
+	public ColumnMatch getColumnMatch(int x) {
+		return columnMatches.get(x);
 	}
 }
