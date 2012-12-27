@@ -45,6 +45,11 @@ public class Name {
 	String subspecies = null;
 	String generatedFrom = null;
 	
+	private boolean parsed = false;
+	
+	private static int cache_hit = 0;
+	private static int cache_miss = 0;
+	
 	private static HashMap<String, Name> cache = new HashMap<String, Name>();
 
 	public static Name getName(String name) {
@@ -52,8 +57,11 @@ public class Name {
 	}
 	
 	public static Name getName(String name, String generatedFrom) {
-		if(cache.containsKey(name))
+		if(cache.containsKey(name)) {
+			// System.err.println("Cache hit (" + (cache_hit++) + "): " + name);
 			return cache.get(name);
+		}
+		// System.err.println("Cache miss (" + (cache_miss++) + "): " + name);
 		Name n = new Name(name, generatedFrom);
 		cache.put(name, n);
 		return n;
@@ -66,6 +74,13 @@ public class Name {
 	public Name(String str, String generatedFrom) {
 		namestring = str;
 		namestring_lc = namestring.toLowerCase();
+		
+		// System.err.println("Name '" + namestring + "': genus '" + genus + "', species '" + species + "', subspecies '" + subspecies + "'");
+	}
+	
+	private void parseName() {
+		if(parsed)
+			return;
 		
 		Pattern p_canonical = Pattern.compile("^\\s*([A-Z][a-z]+)\\s+([a-z]+)(?:\\s+([a-z]+))?\\b"); // \\s+[a-z]+(?:\\s+[a-z]+))\\b");
 		Pattern p_monomial = Pattern.compile("^\\s*([A-Z](?:[a-z]+|[A-Z]+))\\b");
@@ -85,7 +100,7 @@ public class Name {
 			}
 		}
 		
-		// System.err.println("Name '" + namestring + "': genus '" + genus + "', species '" + species + "', subspecies '" + subspecies + "'");
+		parsed = true;
 	}
 	
 	public String getGeneratedFrom() {
@@ -101,22 +116,32 @@ public class Name {
 	}
 	
 	public String getGenus() {
+		if(!parsed) parseName();
+		
 		return genus;
 	}
 	
 	public String getSpecificEpithet() {
+		if(!parsed) parseName();
+		
 		return species;
 	}
 	
 	public String getMonomial() {
+		if(!parsed) parseName();
+		
 		return monomial;
 	}
 	
 	public String getBinomial() {
+		if(!parsed) parseName();
+		
 		return genus + " " + species;
 	}
 	
 	public String getScientificName() {
+		if(!parsed) parseName();
+		
 		if(subspecies != null)
 			return getBinomial() + " " + subspecies;
 		else
@@ -155,6 +180,4 @@ public class Name {
 		
 		return namestring.hashCode();
 	}
-	
-	
 }

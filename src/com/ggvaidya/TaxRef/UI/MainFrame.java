@@ -23,8 +23,6 @@
 package com.ggvaidya.TaxRef.UI;
 
 import com.ggvaidya.TaxRef.*;
-import com.ggvaidya.TaxRef.Common.DelayAbortedException;
-import com.ggvaidya.TaxRef.Common.DelayCallback;
 import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
@@ -34,8 +32,7 @@ import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
 import javax.swing.border.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.event.*;
 import javax.swing.table.*;
 
 /**
@@ -75,9 +72,9 @@ public class MainFrame implements TableCellRenderer {
 	}
 	
 	private void matchAgainst(DarwinCSV against) {
-		currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
-		currentMatch = new RowIndexMatch(currentCSV.getRowIndex(), against.getRowIndex());
-		matchInfoPanel.matchChanged(currentMatch);
+		System.err.println("Here we are");
+		// currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
+		// matchInfoPanel.matchChanged(currentMatch);
 	}
 	
 	private void loadFile(File file, int type) {
@@ -218,8 +215,11 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				try {
+					System.err.println("We are here");
 					DarwinCSV csv_matcher = new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
+					System.err.println("eep");
 					matchAgainst(csv_matcher);
+					System.err.println("argh");
 					
 				} catch (IOException ex) {
 					MessageBox.messageBox(mainFrame, "Unable to open file '" + file + "'", "UNable to open file '" + file + "': " + ex);
@@ -400,6 +400,8 @@ public class MainFrame implements TableCellRenderer {
 					c.setBackground(new Color(137, 207, 230));
 				}
 			} else {
+				int score = currentMatch.getColumnMatchScore(column, value);
+				
 				if(str.length() == 0) {
 					c.setBackground(Color.GRAY);
 				} else if(currentMatch.getAgainst().hasName(str)) {

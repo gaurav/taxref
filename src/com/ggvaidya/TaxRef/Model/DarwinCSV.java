@@ -137,7 +137,9 @@ public class DarwinCSV {
 			index.addColumn(column, colClass);
 		}
 		
+		// System.err.println("Reading all.");
 		List<String[]> data = csvr.readAll();
+		// System.err.println("Read!");
 		
 		double time1 = System.currentTimeMillis();
 		for(String[] rowArray: data) {
@@ -145,6 +147,7 @@ public class DarwinCSV {
 			
 			int columnIndex = 0;
 			for(String field: rowArray) {
+				/*
 				// Cast this back to whatever Class it's supposed to be.
 				Class colClass = index.getColumnClass(columnIndex);
 				Object value = field;
@@ -162,6 +165,15 @@ public class DarwinCSV {
 				} catch (InvocationTargetException ex) {
 				} catch(NoSuchMethodException ex) {
 				}
+				*/
+				
+				// Class colClass = index.getColumnClass(columnIndex);
+				Object value = field;
+				
+				// Special case: for Name, make it into a Name.
+				//if(Name.class.isAssignableFrom(colClass)) {
+				//	value = Name.getName(field);
+				//}
 				
 				row.put(columnNames.get(columnIndex), value);
 				
@@ -171,6 +183,7 @@ public class DarwinCSV {
 		double time2 = System.currentTimeMillis();
 		System.err.println("Time for construction: " + (time2 - time1) + " ms");
 		
+		/*
 		if(!index.containsColumn("canonicalname")) {
 			if(index.containsColumn("scientificname")) {
 				index.addColumn("canonicalname", Name.class);
@@ -183,12 +196,13 @@ public class DarwinCSV {
 						
 						if(n == null) return "";
 						
-						return new Name(n.getScientificName());
+						return Name.getName(n.getScientificName());
 					}
 				});
 			}
 			// Err, how do we do this for genus/species?
 		}
+		*/
 		
 		double time3 = System.currentTimeMillis();
 		System.err.println("Time for canonical name calculation: " + (time3 - time2) + " ms");

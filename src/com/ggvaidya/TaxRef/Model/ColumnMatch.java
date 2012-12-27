@@ -23,7 +23,7 @@
 
 package com.ggvaidya.TaxRef.Model;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * A ColumnMatch matches one column against a RowIndex.
@@ -33,6 +33,7 @@ import java.util.List;
 public class ColumnMatch {
 	private String columnName;
 	private List<Object> values;
+	private Map<Object, Integer> matchScore = new HashMap<Object, Integer>();
 	private RowIndex against;
 	
 	public ColumnMatch(String colName, List<Object> v, RowIndex againstRI) {
@@ -40,6 +41,33 @@ public class ColumnMatch {
 		this.values = v;
 		this.against = againstRI;
 		
-		///////////////////// Continue here.
+		for(Object o: values) {
+			System.err.println("Column match (" + colName + "): " + o);
+			
+			if(Name.class.isAssignableFrom(o.getClass())) {
+				Name name = (Name) o;
+				
+				if(against.hasName(name))
+					matchScore.put(o, 100);
+				else if(against.hasName(name.getGenus()))
+					matchScore.put(o, 80);
+				else
+					matchScore.put(o, 0);
+				
+			} else if(String.class.isAssignableFrom(o.getClass())) {
+				// Match String.
+				// or don't.
+				matchScore.put(o, 0);
+				
+			} else {
+				// Match Object.
+				// or don't.
+				matchScore.put(o, 0);
+			}
+		}
+	}
+	
+	public int getMatchScore(Object o) {
+		return matchScore.get(o);
 	}
 }

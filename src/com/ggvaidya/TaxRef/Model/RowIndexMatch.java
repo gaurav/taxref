@@ -46,6 +46,8 @@ public class RowIndexMatch {
 		
 		int columnIndex = 0;
 		for(String colName: from.getColumnNames()) {
+			System.err.println("Starting row index match: " + colName);
+			
 			List<Object> values = from.getColumn(colName);
 			
 			columnMatches.add(new ColumnMatch(colName, values, against));
@@ -70,5 +72,13 @@ public class RowIndexMatch {
 	
 	public ColumnMatch getColumnMatch(int x) {
 		return columnMatches.get(x);
+	}
+	
+	public int getColumnMatchScore(String colName, Object value) {
+		return getColumnMatch(colName).getMatchScore(value);
+	}
+	
+	public int getColumnMatchScore(int colIndex, Object value) {
+		return getColumnMatch(colIndex).getMatchScore(value);
 	}
 }
