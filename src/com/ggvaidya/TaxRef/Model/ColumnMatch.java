@@ -24,6 +24,8 @@
 package com.ggvaidya.TaxRef.Model;
 
 import java.util.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 
 /**
  * A ColumnMatch matches one column against a RowIndex.
@@ -31,21 +33,40 @@ import java.util.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class ColumnMatch {
-	private String columnName;
+	private final String columnName;
+	private int columnIndex;
 	private List<Object> values;
 	private Map<Object, Integer> matchScore = new HashMap<Object, Integer>();
-	private RowIndex against;
+	private final RowIndex from;
+	private final RowIndex against;
 	
-	public ColumnMatch(String colName, List<Object> v, RowIndex againstRI) {
+	public ColumnMatch(RowIndex _from, String colName, RowIndex againstRI) {
 		this.columnName = colName;
-		this.values = v;
+		this.from = _from;
+		this.values = from.getColumn(colName);
 		this.against = againstRI;
+		
+		from.addTableModelListener(new TableModelListener() {
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				if(from.getColumnIndex(columnName) == e.getColumn()) {
+					calculateMatchScores();
+				}
+			}
+		});
+		calculateMatchScores();
+	}
+	
+	private void calculateMatchScores() {
+		matchScore.clear();
 		
 		for(Object o: values) {
 			// System.err.println("Column match (" + colName + "): " + o);
 			
 			if(Name.class.isAssignableFrom(o.getClass())) {
 				Name name = (Name) o;
+				
+				System.err.println("Calculating match score for " + name + ": " + against.hasName(name));
 				
 				if(against.hasName(name))
 					matchScore.put(o, 100);
@@ -65,9 +86,5 @@ public class ColumnMatch {
 				matchScore.put(o, 0);
 			}
 		}
-	}
-	
-	public int getMatchScore(Object o) {
-		return matchScore.get(o);
 	}
 }

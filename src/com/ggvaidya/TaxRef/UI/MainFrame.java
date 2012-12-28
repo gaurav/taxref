@@ -472,15 +472,16 @@ public class MainFrame implements TableCellRenderer {
 					c.setBackground(new Color(137, 207, 230));
 				}
 			} else {
-				int score = currentMatch.getColumnMatchScore(column, value);
+				RowIndex against = currentMatch.getAgainst();
 				
+				System.err.println("Checking against: " + against);
 				// System.err.println("Score on " + value + ": " + score);
 				
 				if(str.length() == 0) {
 					c.setBackground(Color.GRAY);
-				} else if(score >= 100) {
+				} else if(against.hasName(str)) {
 					c.setBackground(new Color(0, 128, 0));
-				} else if(score > 50) {
+				} else if(against.hasName(Name.getName(str).getGenus())) {
 					c.setBackground(new Color(255, 117, 24));
 				} else {
 					c.setBackground(new Color(226, 6, 44));

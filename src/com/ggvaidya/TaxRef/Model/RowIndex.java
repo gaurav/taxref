@@ -48,8 +48,12 @@ public class RowIndex implements TableModel {
 	private HashMap<String, Class> columnClasses;
 	
 	private List<Object[]> rows = new LinkedList<Object[]>();
+	private HashMap<String, List<Object[]>> nameIndex = new HashMap<String, List<Object[]>>();
 	
-	private HashMap<Name, List<Object[]>> nameIndex = new HashMap<Name, List<Object[]>>();
+	@Override
+	public String toString() {
+		return "RowIndex of " + rows.size() + " rows across " + columns.size() + " columns, " + nameIndex.size() + " names indexed.";
+	}
 	
 	public RowIndex(List<String> columnNames, List<Class> classes) {
 		uuid = UUID.randomUUID();
@@ -61,30 +65,30 @@ public class RowIndex implements TableModel {
 		int index = 0;
 		for(String colName: columns) {
 			
+			Class colClass = classes.get(index);
+			
 			columnsLowercase.add(colName.toLowerCase());
-			columnClasses.put(colName, classes.get(index));
+			columnClasses.put(colName, colClass);
 			
 			index++;
 		}
 	}
 	
-	public void indexName(Name name, Object[] row) {
-		// Index the names.
-		for(int x = 0; x < getColumnCount(); x++) {
-			if(getColumnClass(x).equals(Name.class)) {
-				Name nameToIndex = ((Name) row[x]);
+	public void indexValue(Object obj, Object[] row) {
+		if(Name.class.isAssignableFrom(obj.getClass())) {
+			// Index the names.
+			Name nameToIndex = (Name) obj;
 				
-				if(!nameIndex.containsKey(nameToIndex)) {
-					nameIndex.put(nameToIndex, new LinkedList<Object[]>());
-				}
-				
-				nameIndex.get(nameToIndex).add(row);
+			if(!nameIndex.containsKey(nameToIndex)) {
+				nameIndex.put(nameToIndex.getNamestringLC(), new LinkedList<Object[]>());
 			}
+			
+			nameIndex.get(nameToIndex.getNamestringLC()).add(row);
+			// System.err.println("Adding '" + nameToIndex.getNamestringLC() + "' to name index.");
+			
+		} else {
+			// Not a name? then no index for you.
 		}
-	}
-	
-	public Set<Name> getAllNames() {
-		return nameIndex.keySet();
 	}
 	
 	public void setColumnClass(String colName, Class colClass) {
@@ -133,7 +137,9 @@ public class RowIndex implements TableModel {
 			// copy(3..10)->(4..11) [7]
 			
 			System.arraycopy(row, 0, new_row, 0, insertAt);
-			new_row[insertAt] = mop.mapTo(row[fromColumnIndex]);
+			Object toInsert = mop.mapTo(row[fromColumnIndex]);
+			indexValue(toInsert, row);
+			new_row[insertAt] = toInsert;
 			System.arraycopy(row, insertAt, new_row, insertAt + 1, new_row.length - insertAt - 1);
 			
 			new_rows.add(new_row);
@@ -144,6 +150,10 @@ public class RowIndex implements TableModel {
 	
 	public void addRow(Object[] row) {
 		rows.add(row);
+		
+		for(int x = 0; x < row.length; x++) {
+			indexValue(row[x], row);
+		}
 	}
 	
 	public List<Object[]> getRows() {
@@ -186,7 +196,16 @@ public class RowIndex implements TableModel {
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		if(Name.class.isAssignableFrom(getColumnClass(columnIndex)) &&
+			String.class.isAssignableFrom(aValue.getClass())) {
+			aValue = Name.getName((String)aValue);
+		}
+		
 		rows.get(rowIndex)[columnIndex] = aValue;
+		
+		for(TableModelListener tml: listeners) {
+			tml.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex));
+		}
 	}
 	
 	private List<TableModelListener> listeners = new LinkedList<TableModelListener>();
@@ -215,13 +234,21 @@ public class RowIndex implements TableModel {
 	}
 	
 	public boolean hasName(Name n) {
-		return nameIndex.containsKey(n);
+		if(n == null)
+			return false;
+		
+		System.err.println("And still nothing for '" + n.getNamestringLC() + "': " + nameIndex.containsKey(n.getNamestringLC()));
+		
+		return nameIndex.containsKey(n.getNamestringLC());
 	}
 	
 	public boolean hasName(String str) {
 		if(str == null)
 			return false;
 		
-		return hasName(new Name(str));
+		System.err.println("Ooo err: " + nameIndex.containsKey("palmaria palmata"));
+		System.err.println("And yet nothing for '" + str.toLowerCase() + "': " + nameIndex.containsKey(str.toLowerCase()));
+		
+		return nameIndex.containsKey(str.toLowerCase());
 	}
 }

@@ -136,16 +136,23 @@ public class Name {
 	public String getBinomial() {
 		if(!parsed) parseName();
 		
+		if(genus == null || species == null)
+			return "";
+		
 		return genus + " " + species;
 	}
 	
 	public String getScientificName() {
 		if(!parsed) parseName();
 		
-		if(subspecies != null)
-			return getBinomial() + " " + subspecies;
-		else
-			return getBinomial();
+		if(subspecies != null && genus != null && species != null)
+			return genus + " " + species + " " + subspecies;
+		else {
+			if(genus != null && species != null)
+				return genus + " " + species;
+			else
+				return monomial;
+		}
 	}
 	
 	public String toString() {
@@ -160,7 +167,7 @@ public class Name {
 		if(Name.class.isAssignableFrom(o.getClass())) {
 			Name n = (Name) o;
 			
-			if(n.getNamestringLC().equals(n.getNamestringLC()))
+			if(getNamestringLC().equals(n.getNamestringLC()))
 				return true;
 			else
 				return false;

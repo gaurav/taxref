@@ -48,12 +48,16 @@ public class RowIndexMatch {
 		for(String colName: from.getColumnNames()) {
 			// System.err.println("Starting row index match: " + colName);
 			
-			List<Object> values = from.getColumn(colName);
-			
 			// Only do column matches on name columns ... for now.
 			if(Name.class.isAssignableFrom(from.getColumnClass(columnIndex))) {
-				columnMatches.add(new ColumnMatch(colName, values, against));
+				List<Object> values = from.getColumn(colName);
+				
+				ColumnMatch colMatch = new ColumnMatch(from, colName, against);
+				columnMatches.add(colMatch);
+				
+				System.err.println("colMatch calculated for " + colName + ": " + colMatch);
 			} else {
+				System.err.println("No colMatch needed for " + colName);
 				columnMatches.add(null);
 			}
 			
@@ -77,13 +81,5 @@ public class RowIndexMatch {
 	
 	public ColumnMatch getColumnMatch(int x) {
 		return columnMatches.get(x);
-	}
-	
-	public int getColumnMatchScore(String colName, Object value) {
-		return getColumnMatch(colName).getMatchScore(value);
-	}
-	
-	public int getColumnMatchScore(int colIndex, Object value) {
-		return getColumnMatch(colIndex).getMatchScore(value);
 	}
 }

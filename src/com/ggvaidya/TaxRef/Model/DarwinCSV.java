@@ -200,7 +200,7 @@ public class DarwinCSV {
 					public Object mapTo(Object value) {
 						Name n = (Name) value;
 						
-						if(n == null) return "";
+						if(n == null) return null;
 						return Name.getName(n.getScientificName());
 					}
 				});
