@@ -191,8 +191,8 @@ public class DarwinCSV {
 		double time2 = System.currentTimeMillis();
 		System.err.println("Time for construction: " + (time2 - time1) + " ms");
 		
-		if(!index.containsColumn("canonicalname")) {
-			if(index.containsColumn("scientificname")) {
+		if(!index.hasColumn("canonicalname")) {
+			if(index.hasColumn("scientificname")) {
 				index.setColumnClass("canonicalname", Name.class);
 				
 				index.createNewColumn("canonicalname", index.getColumnIndex("scientificname") + 1, "scientificname", new MapOperation() {

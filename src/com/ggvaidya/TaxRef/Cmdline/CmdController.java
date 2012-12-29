@@ -62,6 +62,7 @@ public class CmdController {
 		// boolean case_sensitive = (cmd.getOptionValue("case") == null) ? false : true;
 		
 		MainFrame mf = new MainFrame();
+		mf.getMainFrame().setVisible(true);
 	}
 	
 	// To be recombined once taxref becomes a command line tool.

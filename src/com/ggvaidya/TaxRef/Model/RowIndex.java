@@ -96,7 +96,7 @@ public class RowIndex implements TableModel {
 		// TODO: cast values?
 	}
 	
-	public boolean containsColumn(String colName) {
+	public boolean hasColumn(String colName) {
 		return columnsLowercase.contains(colName.toLowerCase());
 	}
 	
@@ -201,6 +201,8 @@ public class RowIndex implements TableModel {
 			aValue = Name.getName((String)aValue);
 		}
 		
+		System.err.println("Updated value at (" + rowIndex + ", " + columnIndex + ") from '" + 
+				rows.get(rowIndex)[columnIndex] + "' to '" + aValue + "'");
 		rows.get(rowIndex)[columnIndex] = aValue;
 		
 		for(TableModelListener tml: listeners) {
@@ -232,12 +234,13 @@ public class RowIndex implements TableModel {
 	public List<String> getColumnNamesLowercase() {
 		return new ArrayList(columnsLowercase);
 	}
-	
+
+	// This is a very frequently used method, and should be optimized!
 	public boolean hasName(Name n) {
 		if(n == null)
 			return false;
 		
-		System.err.println("And still nothing for '" + n.getNamestringLC() + "': " + nameIndex.containsKey(n.getNamestringLC()));
+		// System.err.println("And still nothing for '" + n.getNamestringLC() + "': " + nameIndex.containsKey(n.getNamestringLC()));
 		
 		return nameIndex.containsKey(n.getNamestringLC());
 	}
@@ -246,9 +249,16 @@ public class RowIndex implements TableModel {
 		if(str == null)
 			return false;
 		
-		System.err.println("Ooo err: " + nameIndex.containsKey("palmaria palmata"));
-		System.err.println("And yet nothing for '" + str.toLowerCase() + "': " + nameIndex.containsKey(str.toLowerCase()));
+		// System.err.println("Ooo err: " + nameIndex.containsKey("palmaria palmata"));
+		// System.err.println("And yet nothing for '" + str.toLowerCase() + "': " + nameIndex.containsKey(str.toLowerCase()));
 		
 		return nameIndex.containsKey(str.toLowerCase());
+	}
+
+	public List<Object[]> getNameRows(String name) {
+		if(nameIndex == null || name == null)
+			return new ArrayList<Object[]>();
+		
+		return nameIndex.get(name.toLowerCase());
 	}
 }
