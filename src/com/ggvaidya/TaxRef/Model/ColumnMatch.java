@@ -30,6 +30,8 @@ import javax.swing.event.TableModelListener;
 /**
  * A ColumnMatch matches one column against a RowIndex.
  * 
+ * Still being written!
+ * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class ColumnMatch {

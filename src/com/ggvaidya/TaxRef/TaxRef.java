@@ -31,22 +31,49 @@ import com.ggvaidya.TaxRef.Cmdline.CmdController;
  */
 public class TaxRef {
 	
+	/**
+	 * Entrypoint. But really just bungs it on to
+	 * {@link CmdController.handle}.
+	 * 
+	 * @param args Command line arguments.
+	 */
 	public static void main(String[] args) {
 		CmdController.handle(args);
 	}
 
+	/**
+	 * What are we calling this program this week. 
+	 * 
+	 * @return A name to use for this program.
+	 */
 	public static String getName() {
 		return "TaxRef";
 	}
 	
+	/**
+	 * What is the current version number.
+	 * 
+	 * @return The current version number, generally in an A.B.C format, but
+	 * possibly in A.B.C-D.
+	 */
 	public static String getVersion() {
 		return "0.0.2";
 	}
 	
+	/**
+	 * A one-sentence description of this program.
+	 * 
+	 * @return A one-sentence description.
+	 */
 	public static String getDescription() {
 		return "A basic taxon name validator";
 	}
 	
+	/**
+	 * The copyright notice that accompanies this program.
+	 * 
+	 * @return The copyright notice that accompanies this program.
+	 */
 	public static String getCopyright() {
 		return "Copyright (C) 2012 Gaurav Vaidya\n\n" +
 			"TaxRef is free software: you can redistribute it and/or modify\n" +

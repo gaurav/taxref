@@ -20,19 +20,20 @@
  *  along with TaxonValid.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package com.ggvaidya.TaxRef.Model;
+package com.ggvaidya.TaxRef.Common;
 
 /**
- * An interface for mapping values from one value to another.
+ * An interface for mapping values from an array of values into a single resulting
+ * value. This interface can act as the coderef in a Perl `map' call.
  * 
  * @author vaidyagi
  */
-public interface MapOperation {
+public interface ArrayMapOperation {
 	/**
-	 * We'd like to map 'value' to 'returned value'.
+	 * We'd like to map 'values' to 'returned value'.
 	 * 
-	 * @param value The value to map.
+	 * @param values The values to map.
 	 * @return The value after mapping.
 	 */
-	public Object mapTo(Object value);
+	public Object mapTo(Object[] values);
 }

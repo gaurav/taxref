@@ -41,6 +41,7 @@ public class CmdController {
 		Options cmdLineOptions = new Options();
 		setupOptions(cmdLineOptions);
 		
+		// Parse command line options (if possible).
 		CommandLineParser parser = new PosixParser();
 		CommandLine cmd;
 		try {
@@ -51,6 +52,7 @@ public class CmdController {
 			return;
 		}
 		
+		// --version: report the version and copyright information, then exit.
 		if(cmd.hasOption("version")) {
 			System.err.println(TaxRef.getName() + "/" + TaxRef.getVersion());
 			System.err.println(TaxRef.getDescription());
@@ -60,6 +62,7 @@ public class CmdController {
 		}
 		
 		// boolean case_sensitive = (cmd.getOptionValue("case") == null) ? false : true;
+		// TODO: actually write code here.
 		
 		MainFrame mf = new MainFrame();
 		mf.getMainFrame().setVisible(true);

@@ -25,7 +25,6 @@ package com.ggvaidya.TaxRef.Model;
 
 import java.util.*;
 import java.util.regex.*;
-import javax.swing.table.*;
 
 /**
  * A Name is a scientific name-string.
@@ -43,7 +42,6 @@ public class Name {
 	String genus = null;
 	String species = null;
 	String subspecies = null;
-	String generatedFrom = null;
 	
 	private boolean parsed = false;
 	
@@ -51,27 +49,19 @@ public class Name {
 	private static int cache_miss = 0;
 	
 	private static HashMap<String, Name> cache = new HashMap<String, Name>();
-
-	public static Name getName(String name) {
-		return getName(name, null);
-	}
 	
-	public static Name getName(String name, String generatedFrom) {
+	public static Name getName(String name) {
 		if(cache.containsKey(name)) {
 			// System.err.println("Cache hit (" + (cache_hit++) + "): " + name);
 			return cache.get(name);
 		}
 		// System.err.println("Cache miss (" + (cache_miss++) + "): " + name);
-		Name n = new Name(name, generatedFrom);
+		Name n = new Name(name);
 		cache.put(name, n);
 		return n;
 	}
 	
 	public Name(String str) {
-		this(str, null);
-	}
-	
-	public Name(String str, String generatedFrom) {
 		namestring = str;
 		namestring_lc = namestring.toLowerCase();
 		
@@ -101,10 +91,6 @@ public class Name {
 		}
 		
 		parsed = true;
-	}
-	
-	public String getGeneratedFrom() {
-		return generatedFrom;
 	}
 	
 	public String getNamestring() {

@@ -23,6 +23,7 @@
 
 package com.ggvaidya.TaxRef.Model;
 
+import com.ggvaidya.TaxRef.Common.*;
 import java.awt.Component;
 import java.util.*;
 import javax.swing.*;
@@ -123,6 +124,25 @@ public class RowIndex implements TableModel {
 	public void createNewColumn(String newColumn, int insertAt, String fromColumn, MapOperation mop) {
 		int fromColumnIndex = getColumnIndex(fromColumn);
 		
+		class ArrayMapToMapOp implements ArrayMapOperation {
+			private int column;
+			private MapOperation mop;
+			
+			public ArrayMapToMapOp(MapOperation mop, int column) {
+				this.mop = mop;
+				this.column = column;
+			}
+		
+			@Override
+			public Object mapTo(Object[] values) {
+				return mop.mapTo(values[column]);
+			}
+		}
+		
+		createNewColumn(newColumn, insertAt, new ArrayMapToMapOp(mop, fromColumnIndex));
+	}
+	
+	public void createNewColumn(String newColumn, int insertAt, ArrayMapOperation mop) {
 		columns.add(insertAt, newColumn);
 		columnsLowercase.add(insertAt, newColumn);
 				
@@ -137,7 +157,7 @@ public class RowIndex implements TableModel {
 			// copy(3..10)->(4..11) [7]
 			
 			System.arraycopy(row, 0, new_row, 0, insertAt);
-			Object toInsert = mop.mapTo(row[fromColumnIndex]);
+			Object toInsert = mop.mapTo(row);
 			indexValue(toInsert, row);
 			new_row[insertAt] = toInsert;
 			System.arraycopy(row, insertAt, new_row, insertAt + 1, new_row.length - insertAt - 1);
