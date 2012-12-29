@@ -59,9 +59,9 @@ public class DarwinCSV {
 		"acceptedNameUsage",  "acceptedName", "acceptedname", "accepted_name",
 		"family",
 		"genus",
-		"specificEpithet", 
-		"species",
-		"infraspecificEpithet", "subspecies"
+		// "specificEpithet", 
+		// "species",
+		// "infraspecificEpithet", "subspecies"
 	};
 	
 	/**
@@ -195,26 +195,26 @@ public class DarwinCSV {
 					@Override
 					public Object mapTo(Object[] values) {
 						Name genus = (Name) values[col_genus];
-						Name specificEpithet;
-						String speciesColumn;
+						
+						if(genus == null)
+							return null;
+						
+						String specificEpithet;
 						
 						// Which column has the species name? It should be 'specificEpithet',
 						// but MSW uses 'species', so we accept that as long as there's a
 						// 'genus' as well.
-						if(col_specificepithet != -1) {
-							specificEpithet = (Name) values[col_specificepithet];
-							speciesColumn = "specificEpithet";
-						} else {
-							specificEpithet = (Name) values[col_species];
-							speciesColumn = "species";
-						}
+						if(col_specificepithet != -1)
+							specificEpithet = (String) values[col_specificepithet];
+						else
+							specificEpithet = (String) values[col_species];
 						
 						if(col_subspecies == -1)
-							return Name.getName(genus.toString() + " " + specificEpithet.toString());
+							return Name.getName(genus.toString() + " " + specificEpithet);
 						else {
-							Name subspecies = (Name) values[col_subspecies];
+							String subspecies = (String) values[col_subspecies];
 							
-							return Name.getName(genus.toString() + " " + specificEpithet.toString() + " " + subspecies.toString());
+							return Name.getName(genus.toString() + " " + specificEpithet + " " + subspecies);
 						}
 					}
 				});
@@ -270,7 +270,6 @@ public class DarwinCSV {
 	public RowIndex getRowIndex() {
 		return index;
 	}
-	
 	
 	/**
 	 * A short description of this object.

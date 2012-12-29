@@ -70,7 +70,7 @@ public class CmdController {
 	
 	// To be recombined once taxref becomes a command line tool.
 	private static void excisedCode(boolean case_sensitive, CommandLine cmd, CommandLineParser parser) {
-		
+		/*
 		System.err.println("Case sensitive: " + case_sensitive);
 		
 		NameList nl = new NameList();
@@ -99,7 +99,7 @@ public class CmdController {
 			System.exit(0);
 		}
 		
-		/* If all else fails, process the names provided on the command line */
+		/* If all else fails, process the names provided on the command line */ /*
 		int field = 0;
 		String s_field = cmd.getOptionValue("field");
 		if(s_field == null)
@@ -108,6 +108,7 @@ public class CmdController {
 			field = Integer.valueOf(s_field).intValue();
 		
 		processCSVNames(new InputStreamReader(System.in), field, nl, case_sensitive);
+		*/
 	}
 
 	private static void setupOptions(Options cmdLineOptions) {
@@ -144,7 +145,10 @@ public class CmdController {
 		);
 	}
 	
-	private static void processCSVNames(Reader names, int field, NameList nl, boolean case_sensitive) {
+	private static void processCSVNames(Reader names, int field, boolean case_sensitive) {
+		/*
+		 * Arg NameList nl deleted.
+		 * 
 		CSVReader reader = new CSVReader(names);
 		CSVWriter writer = new CSVWriter(new OutputStreamWriter(System.out));
 	
@@ -211,5 +215,6 @@ public class CmdController {
 		} catch(IOException e) {
 			System.err.println("Could not write output: " + e);
 		}
+		*/
 	}
 }

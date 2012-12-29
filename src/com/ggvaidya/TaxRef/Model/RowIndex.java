@@ -76,6 +76,9 @@ public class RowIndex implements TableModel {
 	}
 	
 	public void indexValue(Object obj, Object[] row) {
+		if(obj == null)
+			return;
+		
 		if(Name.class.isAssignableFrom(obj.getClass())) {
 			// Index the names.
 			Name nameToIndex = (Name) obj;
@@ -216,6 +219,9 @@ public class RowIndex implements TableModel {
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		if(aValue == null)
+			aValue = "";
+		
 		if(Name.class.isAssignableFrom(getColumnClass(columnIndex)) &&
 			String.class.isAssignableFrom(aValue.getClass())) {
 			aValue = Name.getName((String)aValue);
