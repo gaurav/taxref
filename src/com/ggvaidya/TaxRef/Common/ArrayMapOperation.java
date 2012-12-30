@@ -30,7 +30,7 @@ package com.ggvaidya.TaxRef.Common;
  */
 public interface ArrayMapOperation {
 	/**
-	 * We'd like to map 'values' to 'returned value'.
+	 * We'd like to map 'values' to a single 'returned value'.
 	 * 
 	 * @param values The values to map.
 	 * @return The value after mapping.
