@@ -24,8 +24,7 @@
 package com.ggvaidya.TaxRef.Model;
 
 import java.util.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
+import javax.swing.event.*;
 
 /**
  * A ColumnMatch matches one column against a RowIndex.

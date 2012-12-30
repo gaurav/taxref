@@ -26,60 +26,63 @@ package com.ggvaidya.TaxRef.Model;
 import java.util.*;
 
 /**
- * Carries out and stores the result of a match.
- * These are joins basically.
+ * Carries out and stores the result of a match. Right now, this is mostly
+ * used to store state on the match (RowIndex from, RowIndex against). 
  *
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class RowIndexMatch {
 	private RowIndex from;
 	private RowIndex against;
-	private List<String> columnNamesLowercase;
-	private List<ColumnMatch> columnMatches;
+	private Map<String, ColumnMatch> columnMatches;
 	
+	/**
+	 * Construct a RowIndexMatch. It's fantastically important that we don't
+	 * actually do ANYTHING at this point. We just don't have the time or the
+	 * (memory) space.
+	 * 
+	 * @param from The RowIndex being matched.
+	 * @param against The RowIndex to match against.
+	 */
 	public RowIndexMatch(RowIndex from, RowIndex against) {
 		this.from = from;
 		this.against = against;
 		
-		columnNamesLowercase = from.getColumnNamesLowercase();
-		columnMatches = new LinkedList<ColumnMatch>();
-		
-		int columnIndex = 0;
-		for(String colName: from.getColumnNames()) {
-			// System.err.println("Starting row index match: " + colName);
-			
-			// Only do column matches on name columns ... for now.
-			if(Name.class.isAssignableFrom(from.getColumnClass(columnIndex))) {
-				// List<Object> values = from.getColumn(colName);
-				
-				ColumnMatch colMatch = new ColumnMatch(from, colName, against);
-				columnMatches.add(colMatch);
-				
-				System.err.println("colMatch calculated for " + colName + ": " + colMatch);
-			} else {
-				System.err.println("No colMatch needed for " + colName);
-				columnMatches.add(null);
-			}
-			
-			columnIndex++;
-		}
+		columnMatches = new HashMap<String, ColumnMatch>(from.getColumnCount());
 	}
 	
+	/**
+	 * @return The RowIndex assumed to be possibly incorrect (the 'from'). 
+	 */
 	public RowIndex getFrom() {
 		return from;
 	}
 	
+	/**
+	 * @return The RowIndex assumed to be absolutely correct (the 'against').
+	 */
 	public RowIndex getAgainst() {
 		return against;
 	}
 	
+	/**
+	 * Retrieve the ColumnMatch object corresponding to the provided column name.
+	 * Again, we'll *try* to delay all actual processing as late as possible,
+	 * so this should be a relatively cheap operation. Hopefully.
+	 * 
+	 * @param colName The column name to look up.
+	 * @return A ColumnMatch object which matches that column against ALL the names
+	 *		in the 'against' RowIndex.
+	 */
 	public ColumnMatch getColumnMatch(String colName) {
-		int index = columnNamesLowercase.indexOf(colName.toLowerCase());
+		if(columnMatches.containsKey(colName.toLowerCase()))
+			return columnMatches.get(colName);
 		
-		return getColumnMatch(index);
-	}
-	
-	public ColumnMatch getColumnMatch(int x) {
-		return columnMatches.get(x);
+		if(!from.hasColumn(colName))
+			throw new RuntimeException("No such column in from '" + from + "': " + colName);
+		
+		ColumnMatch columnMatch = new ColumnMatch(from, colName, against);
+		columnMatches.put(colName.toLowerCase(), columnMatch);
+		return columnMatch;
 	}
 }
