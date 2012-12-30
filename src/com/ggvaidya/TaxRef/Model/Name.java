@@ -74,6 +74,9 @@ public class Name {
 	 * @return A Name object, either pre-allocated or newly-allocated.
 	 */
 	public static Name getName(String name) {
+		if(name == null)
+			return null;
+		
 		// TODO: This is a double-trim; what would be better would be an 
 		// r-trim, so that leading spaces are preserved. But that is Hard.
 		name = name.trim();

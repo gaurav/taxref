@@ -44,36 +44,91 @@ import javax.swing.table.*;
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class MainFrame implements TableCellRenderer {
-	JFrame mainFrame;
-	JTable table = new JTable();
-	JComboBox operations = new JComboBox();
-	JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
-	JProgressBar progressBar = new JProgressBar(0, 100);
+	/* CONSTANTS OR CONSTANT-LIKE THINGS */
+	/** A basic title -- we'll stick the filename on at the end if necessary. */
+	private String basicTitle = TaxRef.getName() + "/" + TaxRef.getVersion();
 	
-	DarwinCSV currentCSV = null;
-	RowIndexMatch currentMatch = null; 
+	/* USER INTERFACE VARIABLES */
+	/** The main frame encapsulated herein. */
+	private final JFrame mainFrame;
+	/** The table which displays the names. */
+	private final JTable table = new JTable();
+	/** The operations drop down, which controls the right rightPanel. */
+	private final JComboBox operations = new JComboBox();
+	/** The text area which shows what's happening on the right rightPanel. */
+	private final JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
+	/** A progress bar which displays memory usage continuously. */
+	private final JProgressBar progressBar = new JProgressBar(0, 100);
+	/** A match information rightPanel. */
 	MatchInformationPanel matchInfoPanel;
 	
-	String basicTitle = TaxRef.getName() + "/" + TaxRef.getVersion();
+	/* VARIABLES */
+	/** 
+	 * The DarwinCSV which is currently open. Remember that this encapsulates
+	 * a RowIndex, but it can also be used to write the file back out. I'm not
+	 * really sure what the plan here is.
+	 */
+	DarwinCSV currentCSV = null;
+	/** The match currently in progress. */
+	RowIndexMatch currentMatch = null; 
+	/** A blank data model. */
+	TableModel blankDataModel = new AbstractTableModel() {
+		public String getColumnName(int x) { return ""; }
+		public int getColumnCount() { return 6; }
+		public int getRowCount() { return 6;}
+		public Object getValueAt(int row, int col) { return ""; }
+	};
+	
+	/* CLASSES */
+	private class MainFrameWorker extends SwingWorker<Object, Object> {
+		protected Object input;
+		
+		public MainFrameWorker() {
+			// Turn on indeterminate when initialized.
+			progressBar.setIndeterminate(true);
+		}
+		
+		public MainFrameWorker(Object input) {
+			this.input = input;
+		}
+		
+		@Override
+		protected Object doInBackground() throws Exception {
+			// Needs to be overridden.
+			throw new UnsupportedOperationException("Not supported yet.");
+		}
+		
+		@Override
+		protected void done() {
+			// Turn off indeterminate.
+			progressBar.setIndeterminate(false);
+			
+			// Check for exceptions, and display them if necessary.
+			try {
+				get();
+			} catch(Exception e) {
+				MessageBox.messageBox(
+					mainFrame, 
+					"Error during processing", 
+					"The following error occurred during processing: " + e.getMessage(), 
+					MessageBox.ERROR
+				);
+			}
+		}
+	};
 	
 	/**
-	 * Create a new, empty, not-visible TaxRef window. Really just activates the setup frame and
-	 * setup memory monitor components, then starts things off.
+	 * Create a new, empty, not-visible TaxRef window. Really just activates 
+	 * the setup frame and setup memory monitor components, then starts things 
+	 * off.
 	 */
 	public MainFrame() {
-		setupFrame();
 		setupMemoryMonitor();
-
-		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	}
-	
-	/**
-	 * Helper method to actually set the frame up.
-	 */
-	private void setupFrame() {
+		
 		// Set up the main frame.
 		mainFrame = new JFrame(basicTitle);
 		mainFrame.setJMenuBar(setupMenuBar());
+		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		// Set up the JTable.
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -82,12 +137,6 @@ public class MainFrame implements TableCellRenderer {
 		
 		// Add a blank table model so that the component renders properly on
 		// startup.
-		TableModel blankDataModel = new AbstractTableModel() {
-			public String getColumnName(int x) { return ""; }
-			public int getColumnCount() { return 6; }
-			public int getRowCount() { return 6;}
-			public Object getValueAt(int row, int col) { return ""; }
-		};
 		table.setModel(blankDataModel);
 		
 		// Add a list selection listener so we can tell the matchInfoPanel
@@ -110,23 +159,26 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		
-		JPanel panel = new JPanel();
-		panel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
-		
-		JPanel internal = new JPanel();
+		// Set up the left panel.
+		JPanel leftPanel = new JPanel();
 		
 		matchInfoPanel = new MatchInformationPanel();
-		internal.setLayout(new BorderLayout());
-		internal.add(matchInfoPanel, BorderLayout.SOUTH);
-		internal.add(new JScrollPane(table));
+		leftPanel.setLayout(new BorderLayout());
+		leftPanel.add(matchInfoPanel, BorderLayout.SOUTH);
+		leftPanel.add(new JScrollPane(table));
+		
+		// Set up the right panel.
+		JPanel rightPanel = new JPanel();
+		rightPanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
 		
 		progressBar.setStringPainted(true);
 		
-		panel.setLayout(new BorderLayout());
-		panel.add(operations, BorderLayout.NORTH);
-		panel.add(new JScrollPane(results));
-		panel.add(progressBar, BorderLayout.SOUTH);
+		rightPanel.setLayout(new BorderLayout());
+		rightPanel.add(operations, BorderLayout.NORTH);
+		rightPanel.add(new JScrollPane(results));
+		rightPanel.add(progressBar, BorderLayout.SOUTH);
 		
+		// Set up an item listener for when the operations bar changes.
 		operations.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
@@ -150,14 +202,15 @@ public class MainFrame implements TableCellRenderer {
 				results.setCaretPosition(0);
 			}
 		});
-		
 		operations.addItem("No files loaded as yet.");	
 		
-		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, internal, panel);
+		// Set up a JSplitPane to split the panels up.
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, leftPanel, rightPanel);
 		split.setResizeWeight(1);
 		mainFrame.add(split);
 		mainFrame.pack();
 		
+		// Set up a drop target so we can pick up files 
 		mainFrame.setDropTarget(new DropTarget(mainFrame, new DropTargetAdapter() {
 			@Override
 			public void dragEnter(DropTargetDragEvent dtde) {
@@ -186,6 +239,7 @@ public class MainFrame implements TableCellRenderer {
 					try {
 						java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 						
+						// If we're given multiple files, pick up only the last file and load that.
 						File f = files.get(files.size() - 1);
 						loadFile(f, DarwinCSV.FILE_CSV_DELIMITED);
 						
@@ -199,6 +253,11 @@ public class MainFrame implements TableCellRenderer {
 		}));
 	}
 	
+	/**
+	 * Set up the menu bar.
+	 * 
+	 * @return The JMenuBar we set up.
+	 */
 	private JMenuBar setupMenuBar() {
 		JMenuBar menuBar = new JMenuBar();
 		
@@ -212,7 +271,7 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file ...", FileDialog.LOAD);
 				fd.setVisible(true);
-				final File file;
+				File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
 				} else if(fd.getFile() != null) {
@@ -221,18 +280,16 @@ public class MainFrame implements TableCellRenderer {
 					return;
 				}
 				
-				progressBar.setIndeterminate(true);
-				new SwingWorker() {
+				// Clear out old file.
+				loadFile(null);
+				
+				// SwingWorker MAGIC!
+				new MainFrameWorker(file) {
 					@Override
 					protected Object doInBackground() throws Exception {
-						loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+						loadFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
 						
 						return null;
-					}
-					
-					@Override
-					protected void done() {
-						progressBar.setIndeterminate(false);
 					}
 				}.execute();
 			}
@@ -245,7 +302,8 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file ...", FileDialog.LOAD);
 				fd.setVisible(true);
-				final File file;
+
+				File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
 				} else if(fd.getFile() != null) {
@@ -253,6 +311,9 @@ public class MainFrame implements TableCellRenderer {
 				} else {
 					return;
 				}
+				
+				// Clear out old file
+				loadFile(null);
 				
 				loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
 			}
@@ -265,28 +326,26 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin tab-delimited file ...", FileDialog.LOAD);
 				fd.setVisible(true);
-				if(fd.getFile() == null)
-					return;
 				
-				final File file;
+				File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
-				} else {
+				} else if(fd.getFile() != null) {
 					file = new File(fd.getFile());
+				} else {
+					return;
 				}
 				
-				progressBar.setIndeterminate(true);
-				new SwingWorker() {
+				// Clear out old file
+				loadFile(null);
+				
+				// SwingWorker MAGIC!
+				new MainFrameWorker(file) {
 					@Override
 					protected Object doInBackground() throws Exception {
-						loadFile(file, DarwinCSV.FILE_TAB_DELIMITED);
+						loadFile((File)input, DarwinCSV.FILE_TAB_DELIMITED);
 						
 						return null;
-					}
-					
-					@Override
-					protected void done() {
-						progressBar.setIndeterminate(false);
 					}
 				}.execute();
 			}
@@ -300,16 +359,25 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Save Darwin CSV file ...", FileDialog.SAVE);
 				fd.setVisible(true);
-				File file = new File(fd.getFile());
+				
+				File file;
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
+				} else if(fd.getFile() != null) {
+					file = new File(fd.getFile());
+				} else {
+					return;
 				}
 				
-				try {
-					currentCSV.saveToFile(file, DarwinCSV.FILE_CSV_DELIMITED);
-				} catch(IOException ex) {
-					MessageBox.messageBox(mainFrame, "Could not write file: " + file, "Could not write file " + file + ": " + ex);
-				}
+				// SwingWorker MAGIC!
+				new MainFrameWorker(file) {
+					@Override
+					protected Object doInBackground() throws Exception {
+						currentCSV.saveToFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
+						
+						return null;
+					}
+				}.execute();
 			}
 		});
 		fileMenu.add(miFileSave);
@@ -334,20 +402,28 @@ public class MainFrame implements TableCellRenderer {
 			public void actionPerformed(ActionEvent e) {
 				FileDialog fd = new FileDialog(mainFrame, "Open Darwin CSV file for matching ...", FileDialog.LOAD);
 				fd.setVisible(true);
-				if(fd == null)
+				
+				if(fd.getFile() == null)
 					return;
+				
 				File file = new File(fd.getFile());
 				if(fd.getDirectory() != null) {
 					file = new File(fd.getDirectory(), fd.getFile());
 				}
 				
-				try {
-					DarwinCSV csv_matcher = new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
-					matchAgainst(csv_matcher);
-					
-				} catch (IOException ex) {
-					MessageBox.messageBox(mainFrame, "Unable to open file '" + file + "'", "UNable to open file '" + file + "': " + ex);
-				}
+				// Clear out old match against.
+				matchAgainst(null);
+				
+				// SwingWorker MAGIC!
+				new MainFrameWorker(file) {
+					@Override
+					protected Object doInBackground() throws Exception {
+						DarwinCSV csv_matcher = new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED);
+						matchAgainst(csv_matcher);
+						
+						return null;
+					}
+				}.execute();
 			}
 		});
 		matchMenu.add(miMatchCSV);
@@ -386,9 +462,6 @@ public class MainFrame implements TableCellRenderer {
 		
 		return menuBar;
 	}
-
-	
-
 	
 	private java.util.Timer memoryTimer;
 	private void setupMemoryMonitor() {
@@ -422,7 +495,11 @@ public class MainFrame implements TableCellRenderer {
 		operations.removeAllItems();
 		table.removeAll();
 		table.setDefaultRenderer(Name.class, this);
-		table.setModel(currentCSV.getRowIndex());
+		if(csv != null) {
+			table.setModel(currentCSV.getRowIndex());
+		} else {
+			table.setModel(blankDataModel);
+		}
 		table.repaint();
 		matchAgainst(null);
 	}
@@ -444,9 +521,16 @@ public class MainFrame implements TableCellRenderer {
 		System.err.println("Finished: " + (t2 - t1) + " ms");
 	}
 	
+	private void loadFile(File file) {
+		// Eventually, this will be some code to figure out what kind of file
+		// it is. But for now ...
+		loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+	}
+	
 	private void loadFile(File file, short type) {
 		if(file == null) {
 			mainFrame.setTitle(basicTitle);
+			setCurrentCSV(null);
 			return;
 		}
 		
