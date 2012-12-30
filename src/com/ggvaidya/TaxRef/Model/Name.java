@@ -139,10 +139,10 @@ public class Name {
 	/**
 	 * @return The genus name if this Name represents a binomial or trinomial.
 	 */
-	public String getGenus() {
+	public Name getGenus() {
 		if(!parsed) parseName();
 		
-		return genus;
+		return Name.getName(genus);
 	}
 	
 	/**

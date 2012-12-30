@@ -251,7 +251,9 @@ public class RowIndex implements TableModel {
 		columns.add(insertAt, newColumn);
 		columnsLowercase.add(insertAt, newColumn);
 				
-		List<Object[]> new_rows = new LinkedList<Object[]>();
+		// Iterate over all the rows, copying each row into the new one, 
+		// inserting the new object as we go.
+		List<Object[]> new_rows = new ArrayList<Object[]>(rows.size());
 		for(Object[] row: rows) {
 			Object[] new_row = new Object[row.length + 1];
 			
@@ -270,100 +272,64 @@ public class RowIndex implements TableModel {
 			new_rows.add(new_row);
 		}
 		
-		rows = new ArrayList<Object[]>(new_rows);
+		rows = new_rows;
 	}
 	
+	/**
+	 * Adds a new row to this dataset. Please make sure your columns are right,
+	 * otherwise everything will go nuts!
+	 * 
+	 * We index every possible value. This means that Name objects in non-Name
+	 * columns will be indexed! This may be a good or bad thing.
+	 * 
+	 * @param row An array of Objects which forms the new row.
+	 */
 	public void addRow(Object[] row) {
 		rows.add(row);
 		
+		// O(n)
 		for(int x = 0; x < row.length; x++) {
 			indexValue(row[x], row);
 		}
 	}
 	
+	/**
+	 * Returns a mutable list of rows. Again, it's a *mutable* list, so be
+	 * careful!
+	 * 
+	 * @return A list of all the rows we have.
+	 */
 	public List<Object[]> getRows() {
-		return new ArrayList(rows);
-	}
-
-	@Override
-	public int getRowCount() {
-		return rows.size();
+		return rows;
 	}
 	
-	public int size() {
-		return rows.size();
-	}
-
-	@Override
-	public int getColumnCount() {
-		return columns.size();
-	}
-
-	@Override
-	public String getColumnName(int columnIndex) {
-		return columns.get(columnIndex);
-	}
-
-	@Override
-	public Class<?> getColumnClass(int columnIndex) {
-		return columnClasses.get(getColumnName(columnIndex).toLowerCase());
-	}
-
-	@Override
-	public boolean isCellEditable(int rowIndex, int columnIndex) {
-		return true;
-	}
-
-	@Override
-	public Object getValueAt(int rowIndex, int columnIndex) {
-		return rows.get(rowIndex)[columnIndex];
-	}
-
-	@Override
-	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		if(aValue == null)
-			aValue = "";
-		
-		if(Name.class.isAssignableFrom(getColumnClass(columnIndex)) &&
-			String.class.isAssignableFrom(aValue.getClass())) {
-			aValue = Name.getName((String)aValue);
-		}
-		
-		System.err.println("Updated value at (" + rowIndex + ", " + columnIndex + ") from '" + 
-				rows.get(rowIndex)[columnIndex] + "' to '" + aValue + "'");
-		rows.get(rowIndex)[columnIndex] = aValue;
-		
-		for(TableModelListener tml: listeners) {
-			tml.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex));
-		}
-	}
-	
-	private List<TableModelListener> listeners = new LinkedList<TableModelListener>();
-
-	@Override
-	public void addTableModelListener(TableModelListener l) {
-		listeners.add(l);
-	}
-
-	@Override
-	public void removeTableModelListener(TableModelListener l) {
-		listeners.remove(l);
-	}
-
-	/* Matching code */
-	public RowIndexMatch matchAgainst(RowIndex against) {
-		return new RowIndexMatch(this, against);
-	}
-
+	/**
+	 * Returns a list of all the column names. This is a copy, so tamper at
+	 * will!
+	 * 
+	 * @return A list of all column names.
+	 */
 	public List<String> getColumnNames() {
 		return new ArrayList(columns);
 	}
 	
+	/**
+	 * Returns a list of lower-cased column names. This is a copy, so tamper
+	 * at will!
+	 * 
+	 * @return A list of all (lower-cased) column names.
+	 */
 	public List<String> getColumnNamesLowercase() {
 		return new ArrayList(columnsLowercase);
 	}
 
-	// This is a very frequently used method, and should be optimized!
+	/**
+	 * Checks whether this name exist in the name index. This method is used a
+	 * lot, and should be optimised to within an inch of its life.
+	 * 
+	 * @param n The name to query.
+	 * @return True if this name exists in the name index, false otherwise.
+	 */
 	public boolean hasName(Name n) {
 		if(n == null)
 			return false;
@@ -373,6 +339,13 @@ public class RowIndex implements TableModel {
 		return nameIndex.containsKey(n.getNamestringLC());
 	}
 	
+	/**
+	 * Checks whether a name-string exists in the name index. We just convert
+	 * the name-string into a Name and use that instead.
+	 * 
+	 * @param str The name-string to query.
+	 * @return True if this name exists, false otherwise.
+	 */
 	public boolean hasName(String str) {
 		if(str == null)
 			return false;
@@ -380,13 +353,160 @@ public class RowIndex implements TableModel {
 		// System.err.println("Ooo err: " + nameIndex.containsKey("palmaria palmata"));
 		// System.err.println("And yet nothing for '" + str.toLowerCase() + "': " + nameIndex.containsKey(str.toLowerCase()));
 		
-		return nameIndex.containsKey(str.toLowerCase());
+		return nameIndex.containsKey(Name.getName(str));
 	}
 
-	public List<Object[]> getNameRows(String name) {
+	/**
+	 * Get all rows indexed against a particular name.
+	 * 
+	 * @param name The name to look up.
+	 * @return The list of rows, or null if no match could be found.
+	 */
+	public List<Object[]> getNameRows(Name name) {
 		if(nameIndex == null || name == null)
-			return new ArrayList<Object[]>();
+			return null;
 		
-		return nameIndex.get(name.toLowerCase());
+		return nameIndex.get(name);
+	}
+	
+	/* Matching code */
+	public RowIndexMatch matchAgainst(RowIndex against) {
+		return new RowIndexMatch(this, against);
+	}
+
+	/*
+	 * 
+	 * TABLE MODEL
+	 * 
+	 */
+
+	/**
+	 * @return The number of rows.
+	 */
+	@Override
+	public int getRowCount() {
+		return rows.size();
+	}
+	
+	/**
+	 * @return The number of rows.
+	 */
+	public int size() {
+		return rows.size();
+	}
+
+	/**
+	 * @return The number of columns.
+	 */
+	@Override
+	public int getColumnCount() {
+		return columns.size();
+	}
+
+	/**
+	 * Returns the name of the column at this index.
+	 * 
+	 * @param columnIndex The column index.
+	 * @return The name of the specified column.
+	 */
+	@Override
+	public String getColumnName(int columnIndex) {
+		return columns.get(columnIndex);
+	}
+
+	/**
+	 * Return the class of this column.
+	 * 
+	 * @param columnIndex The column index to check for column class.
+	 * @return The Class of this column index.
+	 */
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		return columnClasses.get(getColumnName(columnIndex).toLowerCase());
+	}
+
+	/**
+	 * Specifies whether a cell is editable. At the moment, EVERY cell is
+	 * editable. That's how it works.
+	 * 
+	 * @param rowIndex The index of the row.
+	 * @param columnIndex The index of the column.
+	 * @return Returns true if this cell should be editable, returns false
+	 *		if not.
+	 */
+	@Override
+	public boolean isCellEditable(int rowIndex, int columnIndex) {
+		return true;
+	}
+
+	/**
+	 * Returns the value at a particular cell identified by 
+	 * (rowIndex, columnIndex).
+	 * 
+	 * @param rowIndex The row index.
+	 * @param columnIndex The column index.
+	 * @return The value at the specified cell.
+	 */
+	@Override
+	public Object getValueAt(int rowIndex, int columnIndex) {
+		// O(1), since we're just doing two array look ups here.
+		return rows.get(rowIndex)[columnIndex];
+	}
+
+	/**
+	 * Set value at the particular cell identified by (rowIndex, columnIndex).
+	 * 
+	 * @param aValue The value to set.
+	 * @param rowIndex The row index to set the value to.
+	 * @param columnIndex The column index to set the value to.
+	 */
+	@Override
+	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		if(aValue == null)
+			aValue = "";
+		
+		// Delete the previous value from the index.
+		Object prevValue = getValueAt(rowIndex, columnIndex);
+		if(Name.class.isAssignableFrom(prevValue.getClass())) {
+			Name prevName = (Name) prevValue;
+			Object[] row = rows.get(rowIndex);
+			nameIndex.get(prevName).remove(row);
+		}
+		
+		// Special case: if the aValue is a String (like if the user entered a
+		// new name), but the column is a Name column, then automatically create
+		// a new Name object for it.
+		if(Name.class.isAssignableFrom(getColumnClass(columnIndex)) &&
+			String.class.isAssignableFrom(aValue.getClass())) {
+			aValue = Name.getName((String)aValue);
+		}
+		
+		// System.err.println("Updated value at (" + rowIndex + ", " + columnIndex + ") from '" + 
+		// 		rows.get(rowIndex)[columnIndex] + "' to '" + aValue + "'");
+		
+		// Set the value and index it.
+		Object[] row = rows.get(rowIndex);
+		row[columnIndex] = aValue;
+		indexValue(aValue, row);
+		
+		// Inform all the TableModelListeners of the change.
+		for(TableModelListener tml: listeners) {
+			tml.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex));
+		}
+	}
+	
+	/** Our private list of TableModelListeners. */
+	private List<TableModelListener> listeners = new ArrayList<TableModelListener>();
+
+	/** Add a new TableModelListener to our list. */
+	@Override
+	public void addTableModelListener(TableModelListener l) {
+		listeners.add(l);
+	}
+
+	/** Remove a TableModelListener from our list. */
+	@Override
+	public void removeTableModelListener(TableModelListener l) {
+		listeners.remove(l);
 	}
 }

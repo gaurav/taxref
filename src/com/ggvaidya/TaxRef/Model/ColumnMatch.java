@@ -45,7 +45,7 @@ public class ColumnMatch {
 	public ColumnMatch(RowIndex _from, String colName, RowIndex againstRI) {
 		this.columnName = colName;
 		this.from = _from;
-		this.values = from.getColumn(colName);
+		// this.values = from.getColumn(colName);
 		this.against = againstRI;
 		
 		from.addTableModelListener(new TableModelListener() {

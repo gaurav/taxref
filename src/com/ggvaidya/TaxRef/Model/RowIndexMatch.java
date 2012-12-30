@@ -50,7 +50,7 @@ public class RowIndexMatch {
 			
 			// Only do column matches on name columns ... for now.
 			if(Name.class.isAssignableFrom(from.getColumnClass(columnIndex))) {
-				List<Object> values = from.getColumn(colName);
+				// List<Object> values = from.getColumn(colName);
 				
 				ColumnMatch colMatch = new ColumnMatch(from, colName, against);
 				columnMatches.add(colMatch);

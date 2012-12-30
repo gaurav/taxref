@@ -184,10 +184,10 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 			// This logic should definitely be elsewhere, but where?
 			// ColumnMatch? RowIndex?
 			if(against.hasName(name)) {
-				rows = against.getNameRows(name.toString());
+				rows = against.getNameRows(name);
 				tf_matched_name.setText(name.toString());
 			} else if(against.hasName(name.getGenus())) {
-				rows = against.getNameRows(name.getGenus().toString());
+				rows = against.getNameRows(name.getGenus());
 				tf_matched_name.setText(name.getGenus().toString());
 			} else
 				throw new RuntimeException("logical error in MatchInformationPanel.java");
