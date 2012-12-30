@@ -244,6 +244,6 @@ public class Name {
 		return hash;
 		*/
 		
-		return namestring.hashCode();
+		return namestring.toLowerCase().hashCode();
 	}
 }
