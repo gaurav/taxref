@@ -27,26 +27,23 @@ import java.util.*;
 import javax.swing.event.*;
 
 /**
- * A ColumnMatch matches one column against a RowIndex.
- * 
- * Still being written!
+ * A ColumnMatch matches one column against a RowIndex. This is TaxRef's most
+ * common function, so it needs to be fast and furious and all those things.
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
 public class ColumnMatch {
+	/* The columnName, from and against. */
 	private final String columnName;
-	private int columnIndex;
-	private List<Object> values;
-	private Map<Object, Integer> matchScore = new HashMap<Object, Integer>();
 	private final RowIndex from;
 	private final RowIndex against;
 	
 	public ColumnMatch(RowIndex _from, String colName, RowIndex againstRI) {
 		this.columnName = colName;
 		this.from = _from;
-		// this.values = from.getColumn(colName);
 		this.against = againstRI;
 		
+		// Set up a table model listener to recalculate match score.
 		from.addTableModelListener(new TableModelListener() {
 			@Override
 			public void tableChanged(TableModelEvent e) {
@@ -55,37 +52,12 @@ public class ColumnMatch {
 				}
 			}
 		});
+		
+		// Calculate match scores.
 		calculateMatchScores();
 	}
 	
 	private void calculateMatchScores() {
-		matchScore.clear();
-		
-		for(Object o: values) {
-			// System.err.println("Column match (" + colName + "): " + o);
-			
-			if(Name.class.isAssignableFrom(o.getClass())) {
-				Name name = (Name) o;
-				
-				System.err.println("Calculating match score for " + name + ": " + against.hasName(name));
-				
-				if(against.hasName(name))
-					matchScore.put(o, 100);
-				else if(against.hasName(name.getGenus()))
-					matchScore.put(o, 80);
-				else
-					matchScore.put(o, 0);
-				
-			} else if(String.class.isAssignableFrom(o.getClass())) {
-				// Match String.
-				// or don't.
-				matchScore.put(o, 0);
-				
-			} else {
-				// Match Object.
-				// or don't.
-				matchScore.put(o, 0);
-			}
-		}
+		// Do the calculation!
 	}
 }

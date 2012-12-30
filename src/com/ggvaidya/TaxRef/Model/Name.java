@@ -56,13 +56,14 @@ public class Name {
 	/** Has this name been parsed into components already. */
 	private boolean parsed = false;
 	
-	/* Some of the commented out code use these values to calculate cache hit/miss ratios. */
+	/* Some of the commented out code use these values to calculate cache hit/miss ratios.
 	private static int cache_hit = 0;
 	private static int cache_miss = 0;
+	*/
 	
 	/* The getName system allows a single Name to be created for each unique namestring. */
 	
-	/** A static ap of namestring-to-Name mappings cached here. */
+	/** A static map of namestring-to-Name mappings cached here. */
 	private static Map<String, Name> cache = new HashMap<String, Name>();
 	
 	/**
@@ -73,6 +74,8 @@ public class Name {
 	 * @return A Name object, either pre-allocated or newly-allocated.
 	 */
 	public static Name getName(String name) {
+		// TODO: This is a double-trim; what would be better would be an 
+		// r-trim, so that leading spaces are preserved. But that is Hard.
 		name = name.trim();
 		
 		if(cache.containsKey(name)) {
