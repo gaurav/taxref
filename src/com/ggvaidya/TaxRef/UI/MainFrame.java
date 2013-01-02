@@ -132,7 +132,7 @@ public class MainFrame implements TableCellRenderer {
 
 		// Set up the JTable.
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setSelectionBackground(COLOR_BACKGROUND);
+		table.setSelectionBackground(COLOR_SELECTION_BACKGROUND);
 		table.setShowGrid(true);
 		
 		// Add a blank table model so that the component renders properly on
@@ -194,6 +194,8 @@ public class MainFrame implements TableCellRenderer {
 					colName = actionCmd.split("'")[1];
 				}
 				
+				// TODO: item state changed.
+				
 				if(currentCSV != null)
 					results.setText("O NO");
 				else
@@ -214,6 +216,7 @@ public class MainFrame implements TableCellRenderer {
 		mainFrame.setDropTarget(new DropTarget(mainFrame, new DropTargetAdapter() {
 			@Override
 			public void dragEnter(DropTargetDragEvent dtde) {
+				// Accept any drags.
 				dtde.acceptDrag(DnDConstants.ACTION_COPY_OR_MOVE);
 			}
 
@@ -231,6 +234,8 @@ public class MainFrame implements TableCellRenderer {
 
 			@Override
 			public void drop(DropTargetDropEvent dtde) {
+				// Accept a drop as long as its File List.
+				
 				if(dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
 					
@@ -464,19 +469,27 @@ public class MainFrame implements TableCellRenderer {
 	}
 	
 	private java.util.Timer memoryTimer;
+	
+	/**
+	 * The Memory Monitor sets up a 5 second Timer which displays the amount
+	 * of remaining memory (compared to the total memory we have).
+	 */
 	private void setupMemoryMonitor() {
 		memoryTimer = new java.util.Timer("Memory monitor", true);
 		
 		memoryTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
+				// We need to set this off in the Event Thread.
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
+						// Calculate the memory we have.
 						long value = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024);
 						long max = Runtime.getRuntime().maxMemory() / (1024 * 1024);
 						int percentage = (int)(((double)value)/max*100);
 						
+						// Set the progress bar.
 						progressBar.setMinimum(0);
 						progressBar.setMaximum(100);
 						progressBar.setValue(percentage);
@@ -490,50 +503,86 @@ public class MainFrame implements TableCellRenderer {
 		}, new Date(), 5000);	// Every five seconds.
 	}
 	
+	/**
+	 * Set the current open DarwinCSV.
+	 * 
+	 * @param csv The new DarwinCSV object.
+	 */
 	private void setCurrentCSV(DarwinCSV csv) {
-		currentCSV = csv;
+		// Clear the old currentCSV object and matchAgainst object.
 		operations.removeAllItems();
+		currentCSV = null;
+		matchAgainst(null);
+		
+		// Load the new currentCSV object.
+		currentCSV = csv;
 		table.removeAll();
 		table.setDefaultRenderer(Name.class, this);
+		
+		// Set the currentCSV 
 		if(csv != null) {
 			table.setModel(currentCSV.getRowIndex());
 		} else {
 			table.setModel(blankDataModel);
 		}
 		table.repaint();
-		matchAgainst(null);
 	}
 	
+	/**
+	 * Set the DarwinCSV to match this against.
+	 * 
+	 * @param against The DarwinCSV object to match against.
+	 */
 	private void matchAgainst(DarwinCSV against) {
-		System.err.println("matchAgainst: " + against);
+		// System.err.println("matchAgainst: " + against);
 		
-		if(against == null) {
-			currentMatch = null;
-			table.repaint();
+		// Reset previous match information.
+		currentMatch = null;
+		table.repaint();
+		
+		// If all we're doing is a reset, we can get out now.
+		if(against == null)
 			return;
-		}
 		
-		long t1 = System.currentTimeMillis();
+		// long t1 = System.currentTimeMillis();
 		currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
 		table.repaint();
 		matchInfoPanel.matchChanged(currentMatch);
-		long t2 = System.currentTimeMillis();
-		System.err.println("Finished: " + (t2 - t1) + " ms");
+		// long t2 = System.currentTimeMillis();
+		
+		// System.err.println("matchAgainst finished: " + (t2 - t1) + " ms");
 	}
 	
+	/**
+	 * Helper function for loading a file without type information, just for
+	 * convenience. Right now, this just assumes it's CSV and moves it on.
+	 * 
+	 * @param file The file to load.
+	 */
 	private void loadFile(File file) {
 		// Eventually, this will be some code to figure out what kind of file
 		// it is. But for now ...
 		loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
 	}
 	
+	/**
+	 * Load a file of a particular type. It's a pretty standard helper function,
+	 * which uses DarwinCSV and setCurrentCSV(...) to make file loading happen
+	 * with messaging and whatnot. We can also reset the display: just call
+	 * loadFile(null).
+	 * 
+	 * @param file The file to load.
+	 * @param type The type of file (see DarwinCSV's constants).
+	 */
 	private void loadFile(File file, short type) {
+		// If the file was reset, reset the display and keep going.
 		if(file == null) {
 			mainFrame.setTitle(basicTitle);
 			setCurrentCSV(null);
 			return;
 		}
 		
+		// Load up a new DarwinCSV and set current CSV.
 		try {
 			setCurrentCSV(new DarwinCSV(file, type));
 
@@ -544,177 +593,136 @@ public class MainFrame implements TableCellRenderer {
 			);
 		}
 		
+		// Set up the 'operations' variable.
 		operations.addItem("Summarize name identification");
 		for(String column: currentCSV.getRowIndex().getColumnNames()) {
 			operations.addItem("Summarize column '" + column + "'");
 		}
 		
+		// Set the main frame title, based on the filename and the index.
 		mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
 	}
 	
+	/**
+	 * The default table cell renderer. We pass on cell rendering instructions to it.
+	 */
 	private DefaultTableCellRenderer defTableCellRenderer = new DefaultTableCellRenderer();
 	
+	/**
+	 * Renders a table cell in the main JTable. As a TableCellRenderer, we have 
+	 * to implement this method, but we use it to colour different types of
+	 * matches in different ways. Remember that this is run every time a cell
+	 * is displayed on the screen, so it needs to be as fast as can be.
+	 * 
+	 * @param table The table which needs rendering.
+	 * @param value The object which needs rendering. For now, this can only be
+	 *	a Name object, but later on we might colour different types of cells in
+	 *	different ways.
+	 * @param isSelected Is this cell selected, i.e. is the row selected?
+	 * @param hasFocus Is this cell focused, i.e. is this individual cell selected?
+	 * @param row The row coordinate of this cell.
+	 * @param column The column coordinate of this cell.
+	 * @return A component representing this cell.
+	 */
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+		// TODO: Check if we can get a saving out of this by just rendering a JLabel/JTextField directly.
 		Component c = defTableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+		
+		// Set all backgrounds to white.
         c.setBackground(Color.WHITE);
 		
 		if(value == null) {
-			c.setBackground(COLOR_BACKGROUND);
+			// Null values look null-ish.
+			c.setBackground(COLOR_NULL);
 			return c;
 			
 		} else if(hasFocus) {
+			// ANY cell with focus should look focussed.
 			c.setBackground(COLOR_FOCUS);	
 			return c;
 			
 		} else if(Name.class.isAssignableFrom(value.getClass())) {
+			// Aha, a Name! Color it special.
 			Name name = (Name) value;
-			String str = name.toString();
+			int str_length = name.toString().length();
 			
 			if(currentMatch == null) {
-				if(str.length() == 0) {
+				// No current match? Then just colour blank cells blank,
+				// and unmatched name colours special so people know that
+				// they have been recognized as names.
+				
+				if(str_length == 0) {
 					c.setBackground(COLOR_BLANK_CELL);
 				} else {
 					c.setBackground(COLOR_NAME_UNMATCHED);
 				}
 			} else {
+				// So which RowIndex is the match against?
 				RowIndex against = currentMatch.getAgainst();
 				
 				// System.err.println("Checking against: " + against);
 				
-				if(str.length() == 0) {
+				if(str_length == 0) {
+					// Mark blank cells as such.
 					c.setBackground(COLOR_BLANK_CELL);
-				} else if(against.hasName(str)) {
+				} else if(against.hasName(name)) {
+					// Perfect match!
 					c.setBackground(COLOR_NAME_FULL_MATCH);
-				} else if(against.hasName(Name.getName(str).getGenus())) {
+				} else if(against.hasName(name.getGenus())) {
+					// Genus-match.
 					c.setBackground(COLOR_NAME_GENUS_MATCH);
 				} else {
+					// No match!
 					c.setBackground(COLOR_NAME_NO_MATCH);
 				}
 			}
+			
 		} else {
 			// Not a name? Note that Strings will NOT make it here: we don't
 			// push Strings through this. So this is really just for later.
-			c.setBackground(COLOR_BACKGROUND);
+			c.setBackground(COLOR_NULL);
 		}
 		
+		// If the row is selected, make it darker.
 		if(isSelected)
 			c.setBackground(c.getBackground().darker());
 		
 		return c;
 	}
 	
-	public static final Color COLOR_BACKGROUND = new Color(255, 159, 0);
+	/** A blank or non-existent cell. */
+	public static final Color COLOR_NULL = new Color(255, 159, 0);
+	
+	/** A name which could not be matched. */
 	public static final Color COLOR_NAME_NO_MATCH = new Color(226, 6, 44);
+	
+	/** A name which was matched at the genus level but not the species level. */
 	public static final Color COLOR_NAME_GENUS_MATCH = new Color(255, 117, 24);
+	
+	/** A name which was completely and properly matched. */
 	public static final Color COLOR_NAME_FULL_MATCH = new Color(0, 128, 0);
+	
+	/** A cell which has a valid Name, which has a zero-length string. */
 	public static final Color COLOR_BLANK_CELL = Color.GRAY;
+	
+	/** A Name cell which has not matched against anything. */
 	public static final Color COLOR_NAME_UNMATCHED = new Color(137, 207, 230);
+	
+	/** A focused Name cell has its own, distinctive colour, so you know that you
+	 can edit it. Maybe? */
 	public static final Color COLOR_FOCUS = Color.RED;
 
+	/** 
+	 * The colour of non-Name cells which have been selected. Note that selected
+	 * Name cells will currently be in COLOR_NAME_UNMATCHED.darker() or
+	 * COLOR_NAME_*_MATCH.darker(). Also, ALL focused cells are COLOR_FOCUS,
+	 * whether Name or not.
+	 */
+	public static final Color COLOR_SELECTION_BACKGROUND = Color.BLUE;
+
+	/** Return the JFrame which is the main frame of this application. */
 	public JFrame getMainFrame() {
 		return mainFrame;
 	}
-	
-	/*
-	public String generateTextSummaryOfColumn(String colName) {
-		StringBuilder builder = new StringBuilder();
-		
-		if(colName == null) {
-			// Report on the name and the match.
-		
-			builder.append("Currently loaded file: ").append(file.getAbsolutePath()).append("\n");
-			builder.append("  Number of rows: ").append(data.size()).append("\n");
-			builder.append("  Scientific name column: ").append(getColumnInformation(col_scientificname)).append("\n");
-			builder.append("  Canonical name column: ").append(getColumnInformation(col_canonicalname)).append("\n");
-			
-		} else {
-			// Report on the column.
-			int colIndex = column(colName);
-			
-			builder.append("Information about column: ").append(getColumnInformation(colIndex)).append("\n");
-			
-			// This should really be cached!
-			int blank_rows = 0;
-			int total_non_blank = 0;
-			int total_matched = 0;
-			int total_genus_matched = 0;
-			int total_not_matched = 0;
-			HashMap<String, Integer> uniqueValues = new HashMap<String, Integer>();
-			HashSet<String> matchedNames = new HashSet<String>();
-			HashSet<String> matchedGenusNames = new HashSet<String>();
-			boolean matched = false;
-			
-			for(String[] row: data) {
-				String val = row[colIndex];
-				if(val == null || val.equals("")) {
-					blank_rows++;
-				} else {
-					total_non_blank++;
-					
-					if(!uniqueValues.containsKey(val)) {
-						uniqueValues.put(val, new Integer(1));
-					} else {
-						uniqueValues.put(val, new Integer(uniqueValues.get(val).intValue() + 1));
-					}
-					
-					if(matcher != null && (colIndex == col_family || colIndex == col_scientificname || colIndex == col_acceptedname || colIndex == col_canonicalname)) {
-						matched = true;
-						
-						if(matcher.hasName(val)) {
-							matchedNames.add(val);
-							total_matched++;
-						} else if(matcher.hasName(new Name(val).getGenus())) {
-							matchedGenusNames.add(val);
-							total_genus_matched++;
-						} else {
-							total_not_matched++;
-						}
-					}
-				}
-			}
-			
-			int possible_values = uniqueValues.size();
-			builder.append("  Possible values: ").append(possible_values).append("\n");
-			builder.append("    Blank rows: ").append(number_and_percentage(blank_rows, data.size())).append("\n");
-			builder.append("    Non-blank rows: ").append(number_and_percentage(total_non_blank, data.size())).append("\n");
-			
-			if(matched) {
-				builder.append("    Names were matched against ").append(matcher.toString()).append(". (percentages are against non-blank rows)\n");
-				builder.append("      Matched names: ").append(number_and_percentage(total_matched, total_non_blank)).append("\n");
-				builder.append("      Matched genus names: ").append(number_and_percentage(total_genus_matched, total_non_blank)).append("\n");
-				builder.append("      Unmatched names: ").append(number_and_percentage(total_not_matched, total_non_blank)).append("\n");
-			}
-			
-			builder.append("\n");
-			builder.append("    Values: (percentages refer to total non-blank rows)\n");
-		
-			ValueComparator<String, Integer> comparator = new ValueComparator<String, Integer>(uniqueValues);
-			TreeSet<String> sortByValues = new TreeSet<String>(comparator);
-			sortByValues.addAll(uniqueValues.keySet());
-			
-			for(String val: sortByValues.descendingSet()) {
-				if(val == null)
-					val = "(null)";
-				Integer count = uniqueValues.get(val);
-				if(count == null)
-					count = new Integer(-1);
-				
-				String s_matched = "";
-				if(matched) {
-					if(matchedNames.contains(val))
-						s_matched = "\tmatched";
-					else if(matchedGenusNames.contains(val))
-						s_matched = "\tmatched to genus";
-					else
-						s_matched = "\tnot matched";
-				}
-				
-				builder.append("\t").append(val).append(s_matched).append("\t").append(number_and_percentage(count.intValue(), total_non_blank)).append("\n");
-			}
-		}
-		
-		return builder.toString();
-	}
-	* */
 }
