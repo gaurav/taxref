@@ -330,13 +330,13 @@ public class RowIndex implements TableModel {
 	 * @param n The name to query.
 	 * @return True if this name exists in the name index, false otherwise.
 	 */
-	public boolean hasName(Name n) {
-		if(n == null)
+	public boolean hasName(Name name) {
+		if(name == null)
 			return false;
 		
 		// System.err.println("And still nothing for '" + n.getNamestringLC() + "': " + nameIndex.containsKey(n.getNamestringLC()));
 		
-		return nameIndex.containsKey(n.getNamestringLC());
+		return nameIndex.containsKey(name);
 	}
 	
 	/**

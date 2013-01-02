@@ -292,6 +292,7 @@ public class MainFrame implements TableCellRenderer {
 				new MainFrameWorker(file) {
 					@Override
 					protected Object doInBackground() throws Exception {
+						System.err.println("Loading file: " + input);
 						loadFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
 						
 						return null;
@@ -423,8 +424,7 @@ public class MainFrame implements TableCellRenderer {
 				new MainFrameWorker(file) {
 					@Override
 					protected Object doInBackground() throws Exception {
-						DarwinCSV csv_matcher = new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED);
-						matchAgainst(csv_matcher);
+						matchAgainst(new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED));
 						
 						return null;
 					}
@@ -504,7 +504,8 @@ public class MainFrame implements TableCellRenderer {
 	}
 	
 	/**
-	 * Set the current open DarwinCSV.
+	 * Set the current open DarwinCSV. You should really, really, really
+	 * setCurrentCSV(null) before you load a new DarwinCSV.
 	 * 
 	 * @param csv The new DarwinCSV object.
 	 */
@@ -525,6 +526,7 @@ public class MainFrame implements TableCellRenderer {
 		} else {
 			table.setModel(blankDataModel);
 		}
+		
 		table.repaint();
 	}
 	
@@ -582,6 +584,8 @@ public class MainFrame implements TableCellRenderer {
 			return;
 		}
 		
+		System.err.println("Not a reset!");
+		
 		// Load up a new DarwinCSV and set current CSV.
 		try {
 			setCurrentCSV(new DarwinCSV(file, type));
@@ -593,11 +597,15 @@ public class MainFrame implements TableCellRenderer {
 			);
 		}
 		
+		System.err.println("currentCSV set!");
+		
 		// Set up the 'operations' variable.
 		operations.addItem("Summarize name identification");
 		for(String column: currentCSV.getRowIndex().getColumnNames()) {
 			operations.addItem("Summarize column '" + column + "'");
 		}
+		
+		System.err.println("operations work done: " + currentCSV.getRowIndex().getColumnNames());
 		
 		// Set the main frame title, based on the filename and the index.
 		mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
