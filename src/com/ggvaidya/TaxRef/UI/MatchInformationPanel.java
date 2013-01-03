@@ -47,6 +47,7 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 	private RowIndexMatch match;
 	
 	/* The selected cell (i.e. the one we are displaying) in row/col. */
+	private MainFrame mainFrame;
 	private int currentRow = -1;
 	private int currentCol = -1;
 	
@@ -57,12 +58,15 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 	private JTextField tf_accepted_name = new JTextField("", 20);
 	private JTextField tf_accepted_taxonid = new JTextField("", 8);
 	private JTextField tf_match_summary = new JTextField("Zero match problems!");
+	private JButton btn_prev = new JButton("<< Previous");
+	private JButton btn_next = new JButton("Next >>");
 	
 	/**
 	 * Creates a new match information panel.
 	 */
-	public MatchInformationPanel() {
+	public MatchInformationPanel(MainFrame mf) {
 		super();
+		mainFrame = mf;
 		
 		tf_match_summary.setBackground(Color.GREEN);
 		tf_match_summary.setHorizontalAlignment(SwingConstants.CENTER);
@@ -102,9 +106,12 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 		rl.add(tf_accepted_taxonid, RightLayout.BESIDE);
 		rl.add(new JButton("Look up"), RightLayout.BESIDE);
 		
-		rl.add(new JButton("<< Previous"), RightLayout.NEXTLINE);
+		btn_prev.addActionListener(this);
+		btn_next.addActionListener(this);
+		
+		rl.add(btn_prev, RightLayout.NEXTLINE);
 		rl.add(tf_match_summary, RightLayout.BESIDE | RightLayout.FILL_3);
-		rl.add(new JButton("Next >>"), RightLayout.BESIDE);
+		rl.add(btn_next, RightLayout.BESIDE);
 	}
 	
 	/**
@@ -260,7 +267,15 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		textUpdated((JTextField)e.getSource());
+		if(JTextField.class.isAssignableFrom(e.getSource().getClass())) {
+			textUpdated((JTextField)e.getSource());
+		} else {
+			if(e.getSource().equals(btn_prev)) {
+				mainFrame.goToRow(-1);
+			} else {
+				mainFrame.goToRow(+1);
+			}
+		}
 	}
 
 	/* 
@@ -313,5 +328,7 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 			nameSelected(from, (Name)from.getValueAt(currentRow, currentCol), currentRow, currentCol);
 		}
 	}
+
+
 
 }

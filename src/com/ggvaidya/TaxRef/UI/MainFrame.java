@@ -89,6 +89,7 @@ public class MainFrame implements TableCellRenderer {
 		}
 		
 		public MainFrameWorker(Object input) {
+			this();
 			this.input = input;
 		}
 		
@@ -162,7 +163,7 @@ public class MainFrame implements TableCellRenderer {
 		// Set up the left panel.
 		JPanel leftPanel = new JPanel();
 		
-		matchInfoPanel = new MatchInformationPanel();
+		matchInfoPanel = new MatchInformationPanel(this);
 		leftPanel.setLayout(new BorderLayout());
 		leftPanel.add(matchInfoPanel, BorderLayout.SOUTH);
 		leftPanel.add(new JScrollPane(table));
@@ -250,6 +251,7 @@ public class MainFrame implements TableCellRenderer {
 						
 					} catch (UnsupportedFlavorException ex) {
 						dtde.dropComplete(false);
+						
 					} catch (IOException ex) {
 						dtde.dropComplete(false);
 					}
@@ -521,6 +523,10 @@ public class MainFrame implements TableCellRenderer {
 		table.setDefaultRenderer(Name.class, this);
 		
 		// Set the currentCSV 
+		// TODO: This causes an exception occasionally, because we shouldn't
+		// be calling setModel outside of the Event Queue thread; however, we're
+		// currently in a worker thread, so dipping back into the Event thread 
+		// would just cause more problems. Sorry!
 		if(csv != null) {
 			table.setModel(currentCSV.getRowIndex());
 		} else {
@@ -597,15 +603,11 @@ public class MainFrame implements TableCellRenderer {
 			);
 		}
 		
-		System.err.println("currentCSV set!");
-		
 		// Set up the 'operations' variable.
 		operations.addItem("Summarize name identification");
 		for(String column: currentCSV.getRowIndex().getColumnNames()) {
 			operations.addItem("Summarize column '" + column + "'");
 		}
-		
-		System.err.println("operations work done: " + currentCSV.getRowIndex().getColumnNames());
 		
 		// Set the main frame title, based on the filename and the index.
 		mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
@@ -732,5 +734,26 @@ public class MainFrame implements TableCellRenderer {
 	/** Return the JFrame which is the main frame of this application. */
 	public JFrame getMainFrame() {
 		return mainFrame;
+	}
+	
+	/** Return the JTable which is at the heart of this application. */
+	public JTable getJTable() {
+		return table;
+	}
+	
+	/**
+	 * Move the currently selected cell up or down by one cell.
+	 * 
+	 * @param direction -1 for previous, +1 for next.
+	 */
+	public void goToRow(int direction) {
+		int row = table.getSelectedRow();
+		int column = table.getSelectedColumn();
+		
+		table.changeSelection(row + direction, column, false, false);
+	}
+
+	public void goToColumn(int direction) {
+		// TODO
 	}
 }
