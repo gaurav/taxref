@@ -30,6 +30,7 @@ import java.awt.datatransfer.*;
 import java.awt.dnd.*;
 import java.awt.event.*;
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -78,6 +79,58 @@ public class MainFrame implements TableCellRenderer {
 		public int getRowCount() { return 6;}
 		public Object getValueAt(int row, int col) { return ""; }
 	};
+
+	void lookUpTaxonID(String taxonID) {
+		URI url;
+		
+		try {
+			// We should look up the miITIS_TSN status, but since we don't
+			// have any options there ...
+			url = new URI("http://www.itis.gov/servlet/SingleRpt/SingleRpt?search_topic=TSN&search_value=" + taxonID);
+		} catch(URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		
+		try {
+			Desktop desktop = Desktop.getDesktop();
+			desktop.browse(url);
+		
+		} catch(IOException e) {
+			MessageBox.messageBox(
+				mainFrame, 
+				"Could not open URL '" + url + "'", 
+				"The following error occurred during processing: " + e.getMessage(), 
+				MessageBox.ERROR
+			);
+		}
+	}
+
+	void searchName(String nameToMatch) {
+		URI url;
+		
+		try {
+			// We should look up the miITIS_TSN status, but since we don't
+			// have any options there ...
+			url = new URI("http", "www.google.com", "/search", "q=" + nameToMatch);
+			// I think the URI handles the URL encoding?
+			
+		} catch(URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		
+		try {
+			Desktop desktop = Desktop.getDesktop();
+			desktop.browse(url);
+		
+		} catch(IOException e) {
+			MessageBox.messageBox(
+				mainFrame, 
+				"Could not open URL '" + url + "'", 
+				"The following error occurred during processing: " + e.getMessage(), 
+				MessageBox.ERROR
+			);
+		}
+	}
 	
 	/* CLASSES */
 	private class MainFrameWorker extends SwingWorker<Object, Object> {
@@ -445,6 +498,25 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		matchMenu.add(miMatchITIS);
+		
+		/* TaxonID */
+		JMenu taxonIDMenu = new JMenu("TaxonIDs");
+		menuBar.add(taxonIDMenu);
+		
+		/* TaxonID -> Treat TaxonIDs as ... */
+		JMenu treatTaxonIDsAs = new JMenu("Treat TaxonIDs as ...");
+		taxonIDMenu.add(treatTaxonIDsAs);
+		
+		/* TaxonID -> Treat -> ITIS TSNs */
+		JCheckBoxMenuItem miITIS_TSNs = new JCheckBoxMenuItem(new AbstractAction("ITIS TSNs") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// Don't let the user unselect this.
+				((JCheckBoxMenuItem)e.getSource()).setSelected(true);
+			}
+		});
+		miITIS_TSNs.setSelected(true);
+		treatTaxonIDsAs.add(miITIS_TSNs);
 		
 		/* Help */
 		JMenu helpMenu = new JMenu("Help");

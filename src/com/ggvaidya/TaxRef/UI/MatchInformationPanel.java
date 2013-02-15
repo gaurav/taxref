@@ -92,19 +92,49 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 		
 		// Add all the elements into the panel.
 		rl.add(tf_name_to_match, RightLayout.BESIDE | RightLayout.STRETCH_X | RightLayout.FILL_3);
-		rl.add(new JButton("Search"), RightLayout.BESIDE);
+		rl.add(new JButton(new AbstractAction("Search") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String nameToMatch = tf_name_to_match.getText();
+				
+				if(nameToMatch.equals(""))
+					return;
+				
+				mainFrame.searchName(nameToMatch);
+			}
+		}), RightLayout.BESIDE);
 		
 		rl.add(new JLabel("Matched name: "), RightLayout.NEXTLINE);
 		rl.add(tf_matched_name, RightLayout.BESIDE | RightLayout.STRETCH_X);
 		rl.add(new JLabel("TaxonID"), RightLayout.BESIDE);
 		rl.add(tf_matched_taxonid, RightLayout.BESIDE);
-		rl.add(new JButton("Look up"), RightLayout.BESIDE);
+		rl.add(new JButton(new AbstractAction("Look up") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String taxonID = tf_matched_taxonid.getText();
+				
+				if(taxonID.equals("(none)") || taxonID.equals(""))
+					return;
+				
+				mainFrame.lookUpTaxonID(taxonID);
+			}
+		}), RightLayout.BESIDE);
 		
 		rl.add(new JLabel("Accepted name: "), RightLayout.NEXTLINE);
 		rl.add(tf_accepted_name, RightLayout.BESIDE | RightLayout.STRETCH_X);
 		rl.add(new JLabel("TaxonID"), RightLayout.BESIDE);
 		rl.add(tf_accepted_taxonid, RightLayout.BESIDE);
-		rl.add(new JButton("Look up"), RightLayout.BESIDE);
+		rl.add(new JButton(new AbstractAction("Look up") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String taxonID = tf_accepted_taxonid.getText();
+				
+				if(taxonID.equals("(none)") || taxonID.equals(""))
+					return;
+				
+				mainFrame.lookUpTaxonID(taxonID);
+			}
+		}), RightLayout.BESIDE);
 		
 		btn_prev.addActionListener(this);
 		btn_next.addActionListener(this);
