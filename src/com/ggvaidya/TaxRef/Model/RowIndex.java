@@ -273,6 +273,11 @@ public class RowIndex implements TableModel {
 		}
 		
 		rows = new_rows;
+		 
+		for(TableModelListener l: listeners) {
+			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.HEADER_ROW));
+			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
+		}
 	}
 	
 	/**

@@ -23,6 +23,7 @@
 package com.ggvaidya.TaxRef.UI;
 
 import com.ggvaidya.TaxRef.*;
+// import com.ggvaidya.TaxRef.Common.*;
 import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
@@ -517,6 +518,47 @@ public class MainFrame implements TableCellRenderer {
 		});
 		miITIS_TSNs.setSelected(true);
 		treatTaxonIDsAs.add(miITIS_TSNs);
+		
+		/* TaxonID -> Create family column */
+		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create family column") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				/*
+				if(currentCSV == null)
+					return;
+				
+				if(currentMatch == null)
+					return;
+				
+				int col = getJTable().getSelectedColumn();
+				if(col == -1)
+					return;
+				
+				RowIndex rowIndex = currentCSV.getRowIndex();
+				
+				String colName = rowIndex.getColumnName(col);
+				if(rowIndex.hasColumn(colName + "_family")) {
+					// TODO MessageBox
+					return;
+				}
+				
+				if(Name.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(col))) {
+					// A name class! Make a new column!
+					currentCSV.getRowIndex().setColumnClass(colName + "_family", String.class);
+					currentCSV.getRowIndex().createNewColumn(colName + "_family", col + 1, colName, new MapOperation() {
+						@Override
+						public Object mapTo(Object value) {
+							return "family";
+						}
+					});
+					
+					// Repaint the table.
+					getJTable().repaint();
+				}
+				*/
+			}
+		});
+		taxonIDMenu.add(miTaxonID_createFamily);
 		
 		/* Help */
 		JMenu helpMenu = new JMenu("Help");
