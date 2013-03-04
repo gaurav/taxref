@@ -73,6 +73,8 @@ public class MessageBox extends Dialog implements ActionListener {
 	public static final int	MB_SIMPLE = 	0x1000;
 	/** Create an "error" messageBox, with a single "OK" button. */
 	public static final int	MB_ERROR = 	0x1000;
+	/** Create an "error" messageBox, with a single "OK" button. */
+	public static final int	ERROR = 	0x1000;
 	/** Create a yes/no messageBox */
 	public static final int	MB_YESNO =	0x2000;
 	/** Create a yes/no messageBox, with a single "CANCEL" button. */
