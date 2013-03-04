@@ -135,15 +135,18 @@ public class MainFrame implements TableCellRenderer {
 	
 	/* CLASSES */
 	private class MainFrameWorker extends SwingWorker<Object, Object> {
+		protected String task;
 		protected Object input;
 		
-		public MainFrameWorker() {
+		public MainFrameWorker(String task) {
+			this.task = task;
+			
 			// Turn on indeterminate when initialized.
 			progressBar.setIndeterminate(true);
 		}
 		
-		public MainFrameWorker(Object input) {
-			this();
+		public MainFrameWorker(String task, Object input) {
+			this(task);
 			this.input = input;
 		}
 		
@@ -162,10 +165,13 @@ public class MainFrame implements TableCellRenderer {
 			try {
 				get();
 			} catch(Exception e) {
+				StringWriter stack_trace = new StringWriter();
+				e.printStackTrace(new PrintWriter(stack_trace));
+				
 				MessageBox.messageBox(
 					mainFrame, 
-					"Error during processing", 
-					"The following error occurred during processing: " + e.getMessage(), 
+					"Error while " + task, 
+					"The following error occurred while " + task + ": " + e.getMessage() + "\n\nStack trace: " + stack_trace, 
 					MessageBox.ERROR
 				);
 			}
@@ -345,7 +351,7 @@ public class MainFrame implements TableCellRenderer {
 				loadFile(null);
 				
 				// SwingWorker MAGIC!
-				new MainFrameWorker(file) {
+				new MainFrameWorker("loading file '" + file + "'", file) {
 					@Override
 					protected Object doInBackground() throws Exception {
 						System.err.println("Loading file: " + input);
@@ -402,7 +408,7 @@ public class MainFrame implements TableCellRenderer {
 				loadFile(null);
 				
 				// SwingWorker MAGIC!
-				new MainFrameWorker(file) {
+				new MainFrameWorker("loading file '" + file + "'", file) {
 					@Override
 					protected Object doInBackground() throws Exception {
 						loadFile((File)input, DarwinCSV.FILE_TAB_DELIMITED);
@@ -432,7 +438,7 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				// SwingWorker MAGIC!
-				new MainFrameWorker(file) {
+				new MainFrameWorker("saving CSV file '" + file + "'", file) {
 					@Override
 					protected Object doInBackground() throws Exception {
 						currentCSV.saveToFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
@@ -477,7 +483,7 @@ public class MainFrame implements TableCellRenderer {
 				matchAgainst(null);
 				
 				// SwingWorker MAGIC!
-				new MainFrameWorker(file) {
+				new MainFrameWorker("matching against file '" + file + "'", file) {
 					@Override
 					protected Object doInBackground() throws Exception {
 						matchAgainst(new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED));
