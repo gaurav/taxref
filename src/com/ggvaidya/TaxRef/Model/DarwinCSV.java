@@ -132,8 +132,23 @@ public class DarwinCSV {
 		// Read in all the rows, converting Name columns into Name objects.
 		double time1 = System.currentTimeMillis();
 		String[] rowArray;
+		
+		int rows_read = 0;
 		while((rowArray = csvr.readNext()) != null) {
 			Object[] row = new Object[rowArray.length];
+
+			rows_read++;
+			//System.err.println("Reading row " + file_row + ", actual row count: " + index.getRowCount());
+			if(rowArray.length != index.getColumnCount()) {
+				throw new IndexOutOfBoundsException(
+					"Expected " + index.getColumnCount() + " columns, but " +
+					"read " + rowArray.length + " columns " +
+					"on data row " + rows_read + " " +
+					"of file '" + f + "'. Please open this file in a CSV editor " +
+					"and re-export as CSV so that all rows have the same number " +
+					"of columns."
+				);
+			}
 			
 			int columnIndex = 0;
 			for(String field: rowArray) {
