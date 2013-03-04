@@ -100,7 +100,7 @@ public class MainFrame implements TableCellRenderer {
 			MessageBox.messageBox(
 				mainFrame, 
 				"Could not open URL '" + url + "'", 
-				"The following error occurred during processing: " + e.getMessage(), 
+				"The following error occurred while looking up URL '" + url + "': " + e.getMessage(), 
 				MessageBox.ERROR
 			);
 		}
@@ -127,7 +127,7 @@ public class MainFrame implements TableCellRenderer {
 			MessageBox.messageBox(
 				mainFrame, 
 				"Could not open URL '" + url + "'", 
-				"The following error occurred during processing: " + e.getMessage(), 
+				"The following error occurred while looking up URL '" + url + "': " + e.getMessage(), 
 				MessageBox.ERROR
 			);
 		}
