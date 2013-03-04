@@ -710,8 +710,6 @@ public class MainFrame implements TableCellRenderer {
 			return;
 		}
 		
-		System.err.println("Not a reset!");
-		
 		// Load up a new DarwinCSV and set current CSV.
 		try {
 			setCurrentCSV(new DarwinCSV(file, type));
