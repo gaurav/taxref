@@ -55,14 +55,15 @@ public class MainFrame implements TableCellRenderer {
 	private final JFrame mainFrame;
 	/** The table which displays the names. */
 	private final JTable table = new JTable();
-	/** The operations drop down, which controls the right rightPanel. */
-	private final JComboBox operations = new JComboBox();
 	/** The text area which shows what's happening on the right rightPanel. */
 	private final JTextArea results = new JTextArea("Please choose an operation from the dropdown above.");
 	/** A progress bar which displays memory usage continuously. */
 	private final JProgressBar progressBar = new JProgressBar(0, 100);
+	
 	/** A match information rightPanel. */
 	MatchInformationPanel matchInfoPanel;
+	
+	ColumnInformationPanel columnInfoPanel;
 	
 	/* VARIABLES */
 	/** 
@@ -211,6 +212,8 @@ public class MainFrame implements TableCellRenderer {
 				int row = table.getSelectedRow();
 				int column = table.getSelectedColumn();
 				
+				columnInfoPanel.columnChanged(column);
+				
 				Object o = table.getModel().getValueAt(row, column);
 				if(Name.class.isAssignableFrom(o.getClass())) {
 					matchInfoPanel.nameSelected(currentCSV.getRowIndex(), (Name) o, row, column);
@@ -220,7 +223,7 @@ public class MainFrame implements TableCellRenderer {
 			}
 		});
 		
-		// Set up the left panel.
+		// Set up the left panel (table + matchInfoPanel)
 		JPanel leftPanel = new JPanel();
 		
 		matchInfoPanel = new MatchInformationPanel(this);
@@ -228,44 +231,16 @@ public class MainFrame implements TableCellRenderer {
 		leftPanel.add(matchInfoPanel, BorderLayout.SOUTH);
 		leftPanel.add(new JScrollPane(table));
 		
-		// Set up the right panel.
+		// Set up the right panel (columnInfoPanel)
 		JPanel rightPanel = new JPanel();
-		rightPanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+		
+		columnInfoPanel = new ColumnInformationPanel(this);
 		
 		progressBar.setStringPainted(true);
 		
 		rightPanel.setLayout(new BorderLayout());
-		rightPanel.add(operations, BorderLayout.NORTH);
-		rightPanel.add(new JScrollPane(results));
+		rightPanel.add(columnInfoPanel);
 		rightPanel.add(progressBar, BorderLayout.SOUTH);
-		
-		// Set up an item listener for when the operations bar changes.
-		operations.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				if(e.getStateChange() != ItemEvent.SELECTED)
-					return;
-				
-				String actionCmd = (String) e.getItem();
-				String colName = null;
-				
-				if(actionCmd.startsWith("Summarize name identification")) {
-					colName = null;
-				} else if(actionCmd.startsWith("Summarize column '")) {
-					colName = actionCmd.split("'")[1];
-				}
-				
-				// TODO: item state changed.
-				
-				if(currentCSV != null)
-					results.setText("O NO");
-				else
-					results.setText("No file loaded.");
-				
-				results.setCaretPosition(0);
-			}
-		});
-		operations.addItem("No files loaded as yet.");	
 		
 		// Set up a JSplitPane to split the panels up.
 		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, false, leftPanel, rightPanel);
@@ -633,7 +608,6 @@ public class MainFrame implements TableCellRenderer {
 	 */
 	private void setCurrentCSV(DarwinCSV csv) {
 		// Clear the old currentCSV object and matchAgainst object.
-		operations.removeAllItems();
 		currentCSV = null;
 		matchAgainst(null);
 		
@@ -653,6 +627,8 @@ public class MainFrame implements TableCellRenderer {
 			table.setModel(blankDataModel);
 		}
 		
+		columnInfoPanel.loadedFileChanged(csv);
+		columnInfoPanel.columnChanged(-1);
 		table.repaint();
 	}
 	
@@ -719,12 +695,6 @@ public class MainFrame implements TableCellRenderer {
 				"Could not read file '" + file + "'", 
 				"Unable to read file '" + file + "': " + ex
 			);
-		}
-		
-		// Set up the 'operations' variable.
-		operations.addItem("Summarize name identification");
-		for(String column: currentCSV.getRowIndex().getColumnNames()) {
-			operations.addItem("Summarize column '" + column + "'");
 		}
 		
 		// Set the main frame title, based on the filename and the index.
@@ -820,7 +790,7 @@ public class MainFrame implements TableCellRenderer {
 	}
 	
 	/** A blank or non-existent cell. */
-	public static final Color COLOR_NULL = new Color(255, 159, 0);
+	public static final Color COLOR_NULL = Color.gray;
 	
 	/** A name which could not be matched. */
 	public static final Color COLOR_NAME_NO_MATCH = new Color(226, 6, 44);
@@ -873,5 +843,11 @@ public class MainFrame implements TableCellRenderer {
 
 	public void goToColumn(int direction) {
 		// TODO
+	}
+	
+	void goToSpecificColumn(int selectedIndex) {
+		int row = table.getSelectedRow();
+		
+		table.changeSelection(row, selectedIndex, true, true);
 	}
 }
