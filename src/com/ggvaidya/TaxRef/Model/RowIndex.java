@@ -180,6 +180,39 @@ public class RowIndex implements TableModel {
 	 */
 	public void setColumnClass(String colName, Class colClass) {
 		columnClasses.put(colName.toLowerCase(), colClass);
+		
+		for(TableModelListener l: listeners) {
+			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.HEADER_ROW));
+			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
+		}
+	}
+	
+	public void changeColumnClass(String colName, Class toClass) {
+		int colIndex = getColumnIndex(colName);
+		Class fromClass = getColumnClass(colIndex);
+		
+		for(Object[] row: rows) {
+			row[colIndex] = castTo(fromClass, toClass, row[colIndex]);
+		}
+		
+		// Calls the table listeners for us.
+		setColumnClass(colName, toClass);
+	}
+	
+	private Object castTo(Class fromClass, Class toClass, Object value) {
+		// String -> Name
+		if(fromClass.isAssignableFrom(String.class) && toClass.isAssignableFrom(Name.class)) {
+			return Name.getName((String) value);
+		}
+		
+		// Name -> String
+		if(fromClass.isAssignableFrom(Name.class) && toClass.isAssignableFrom(String.class)) {
+			// Put it into another object, otherwise it will still be a "Name".
+			return new String(((Name) value).toString());
+		}
+			
+		// No dice.
+		return "ERR";
 	}
 	
 	/**
