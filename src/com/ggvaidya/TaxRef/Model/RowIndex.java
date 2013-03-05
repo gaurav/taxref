@@ -24,6 +24,7 @@
 package com.ggvaidya.TaxRef.Model;
 
 import com.ggvaidya.TaxRef.Common.*;
+import java.lang.reflect.*;
 import java.util.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
@@ -182,37 +183,34 @@ public class RowIndex implements TableModel {
 		columnClasses.put(colName.toLowerCase(), colClass);
 		
 		for(TableModelListener l: listeners) {
-			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.HEADER_ROW));
 			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
 		}
 	}
 	
-	public void changeColumnClass(String colName, Class toClass) {
+	public void changeColumnClass(String colName, Class toClass) throws NoSuchMethodException {
 		int colIndex = getColumnIndex(colName);
-		Class fromClass = getColumnClass(colIndex);
+		Constructor c = null;
+		
+		if(!toClass.isAssignableFrom(String.class)) {
+			// If there's no such constructor, we'll throw NoSuchMethodException here,
+			// before we've touched the data.
+			c = toClass.getConstructor(getColumnClass(colIndex));
+		}
 		
 		for(Object[] row: rows) {
-			row[colIndex] = castTo(fromClass, toClass, row[colIndex]);
+			try {
+				if(toClass.isAssignableFrom(String.class)) {
+					row[colIndex] = new String(row[colIndex].toString());
+				} else {
+					row[colIndex] = c.newInstance(row[colIndex]);
+				}
+			} catch(Exception ex) {
+				throw new RuntimeException("Unable to convert from " + getColumnClass(colIndex) + " to " + toClass + ": " + ex);
+			}
 		}
 		
 		// Calls the table listeners for us.
 		setColumnClass(colName, toClass);
-	}
-	
-	private Object castTo(Class fromClass, Class toClass, Object value) {
-		// String -> Name
-		if(fromClass.isAssignableFrom(String.class) && toClass.isAssignableFrom(Name.class)) {
-			return Name.getName((String) value);
-		}
-		
-		// Name -> String
-		if(fromClass.isAssignableFrom(Name.class) && toClass.isAssignableFrom(String.class)) {
-			// Put it into another object, otherwise it will still be a "Name".
-			return new String(((Name) value).toString());
-		}
-			
-		// No dice.
-		return "ERR";
 	}
 	
 	/**
