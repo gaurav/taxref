@@ -23,6 +23,7 @@
 
 package com.ggvaidya.TaxRef.UI;
 
+import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import com.ggvaidya.TaxRef.Model.*;
 import java.util.List;
 import java.awt.*;

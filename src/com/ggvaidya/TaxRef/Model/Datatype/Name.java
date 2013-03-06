@@ -21,7 +21,7 @@
  *
  */
 
-package com.ggvaidya.TaxRef.Model;
+package com.ggvaidya.TaxRef.Model.Datatype;
 
 import java.util.*;
 import java.util.regex.*;
