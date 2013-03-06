@@ -23,14 +23,10 @@
 
 package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
-import com.ggvaidya.TaxRef.Common.*;
 import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import java.awt.*;
-import java.util.*;
 import java.awt.event.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.border.*;
 
@@ -112,6 +108,7 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 		list_treat_as.setEditable(false);
 		list_treat_as.addItem("Treat column as text");
 		list_treat_as.addItem("Treat column as scientific name");
+		list_treat_as.addItem("Treat column as primary key");
 		list_treat_as.addItemListener(this);
 		
 		panel_commands.setLayout(new GridLayout(1, 1));
@@ -166,8 +163,11 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 		RowIndex rowIndex = currentCSV.getRowIndex();
 		
 		// list_treat_as
-		if(rowIndex.getColumnClass(currentCol).isAssignableFrom(Name.class)) {
+		Class colClass = rowIndex.getColumnClass(currentCol);
+		if(colClass.isAssignableFrom(Name.class)) {
 			list_treat_as.setSelectedIndex(1);
+		} else if(colClass.isAssignableFrom(PrimaryKey.class)) {
+			list_treat_as.setSelectedIndex(2);
 		} else {
 			list_treat_as.setSelectedIndex(0);
 		}
@@ -197,6 +197,10 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 						break;
 					case 1:
 						treatAsClass = Name.class;
+						break;
+					case 2:
+						treatAsClass = PrimaryKey.class;
+						break;
 				}
 				
 				System.err.println("Setting class on " + colName + " to " + treatAsClass);
@@ -225,6 +229,10 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 						break;
 					case 1:
 						treatAsClass = Name.class;
+						break;
+					case 2:
+						treatAsClass = PrimaryKey.class;
+						break;
 				}
 				
 				if(originalClass == treatAsClass)

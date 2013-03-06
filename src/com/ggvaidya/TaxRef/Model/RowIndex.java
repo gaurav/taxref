@@ -23,8 +23,8 @@
 
 package com.ggvaidya.TaxRef.Model;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import com.ggvaidya.TaxRef.Common.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import java.lang.reflect.*;
 import java.util.*;
 import javax.swing.event.*;
@@ -91,6 +91,9 @@ public class RowIndex implements TableModel {
 	 * things we'd like to track.
 	 */
 	private Map<Name, List<Object[]>> nameIndex = new HashMap<Name, List<Object[]>>();
+	
+	
+	private Map<PrimaryKey, List<Object[]>> pkIndex = new HashMap<PrimaryKey, List<Object[]>>();
 	
 	/**
 	 * @return A textual description of this object.
@@ -162,9 +165,32 @@ public class RowIndex implements TableModel {
 			
 			return true;
 			
+		} else if(PrimaryKey.class.isAssignableFrom(obj.getClass())) {
+			// Index primary keys.
+			PrimaryKey pk = (PrimaryKey) obj;
+			
+			if(!pkIndex.containsKey(pkIndex))
+				pkIndex.put(pk, new ArrayList<Object[]>());
+			
+			pkIndex.get(pk).add(row);
+			
+			return true;
 		} else {
 			// Not a name? then no index for you.
 			return false;
+		}
+	}
+	
+	public void unindexValue(Object obj, Object[] row) {
+		// Delete value from all our indexes.
+		if(nameIndex.containsKey(obj)) {
+			List<Object[]> rows = nameIndex.get(obj);
+			rows.remove(row);
+		}
+		
+		if(pkIndex.containsKey(obj)) {
+			List<Object[]> rows = pkIndex.get(obj);
+			rows.remove(row);
 		}
 	}
 	
@@ -199,6 +225,9 @@ public class RowIndex implements TableModel {
 		}
 		
 		for(Object[] row: rows) {
+			// Unindex the previous value.
+			unindexValue(row[colIndex], row);
+			
 			try {
 				if(toClass.isAssignableFrom(String.class)) {
 					row[colIndex] = new String(row[colIndex].toString());
@@ -208,6 +237,9 @@ public class RowIndex implements TableModel {
 			} catch(Exception ex) {
 				throw new RuntimeException("Unable to convert from " + getColumnClass(colIndex) + " to " + toClass + ": " + ex);
 			}
+			
+			// Index the newly class-switched value.
+			indexValue(row[colIndex], row);
 		}
 		
 		// Calls the table listeners for us.
@@ -504,11 +536,7 @@ public class RowIndex implements TableModel {
 		
 		// Delete the previous value from the index.
 		Object prevValue = getValueAt(rowIndex, columnIndex);
-		if(Name.class.isAssignableFrom(prevValue.getClass())) {
-			Name prevName = (Name) prevValue;
-			Object[] row = rows.get(rowIndex);
-			nameIndex.get(prevName).remove(row);
-		}
+		unindexValue(prevValue, getRows().get(rowIndex));
 		
 		// Special case: if the aValue is a String (like if the user entered a
 		// new name), but the column is a Name column, then automatically create
@@ -545,5 +573,9 @@ public class RowIndex implements TableModel {
 	@Override
 	public void removeTableModelListener(TableModelListener l) {
 		listeners.remove(l);
+	}
+
+	public List<Object[]> getPrimaryKeyRows(PrimaryKey pk) {
+		return pkIndex.get(pk);
 	}
 }

@@ -22,12 +22,12 @@
  */
 package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import com.ggvaidya.TaxRef.*;
-// import com.ggvaidya.TaxRef.Common.*;
 import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
+import java.awt.List;
 import java.awt.datatransfer.*;
 import java.awt.dnd.*;
 import java.awt.event.*;
@@ -35,7 +35,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import javax.swing.*;
-import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 
@@ -616,6 +615,7 @@ public class MainFrame implements TableCellRenderer {
 		currentCSV = csv;
 		table.removeAll();
 		table.setDefaultRenderer(Name.class, this);
+		table.setDefaultRenderer(PrimaryKey.class, this);
 		
 		// Set the currentCSV 
 		// TODO: This causes an exception occasionally, because we shouldn't
@@ -741,6 +741,14 @@ public class MainFrame implements TableCellRenderer {
 			c.setBackground(COLOR_FOCUS);	
 			return c;
 			
+		} else if(PrimaryKey.class.isAssignableFrom(value.getClass())) {
+			int rows = currentCSV.getRowIndex().getPrimaryKeyRows((PrimaryKey) value).size();
+			if(rows > 1) {
+				c.setBackground(COLOR_PK_MULTIPLE);
+			} else {
+				c.setBackground(COLOR_PK_SINGLE);
+			}
+			
 		} else if(Name.class.isAssignableFrom(value.getClass())) {
 			// Aha, a Name! Color it special.
 			Name name = (Name) value;
@@ -811,6 +819,10 @@ public class MainFrame implements TableCellRenderer {
 	/** A focused Name cell has its own, distinctive colour, so you know that you
 	 can edit it. Maybe? */
 	public static final Color COLOR_FOCUS = Color.RED;
+	
+	// PK: primary key, red: multiple matches, green: single match.
+	public static final Color COLOR_PK_MULTIPLE = Color.RED;
+	public static final Color COLOR_PK_SINGLE = Color.GREEN;
 
 	/** 
 	 * The colour of non-Name cells which have been selected. Note that selected

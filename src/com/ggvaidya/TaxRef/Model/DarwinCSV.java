@@ -23,9 +23,9 @@
 
 package com.ggvaidya.TaxRef.Model;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import au.com.bytecode.opencsv.*;
 import com.ggvaidya.TaxRef.Common.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import java.io.*;
 import java.util.*;
 
@@ -65,6 +65,10 @@ public class DarwinCSV {
 		// "infraspecificEpithet", "subspecies"
 	};
 	
+	public static final String[] fieldNamesForIDs = {
+		"id", "taxonid"
+	};
+	
 	/**
 	 * Create a DarwinCSV from a delimited file of the type specified.
 	 * 
@@ -90,6 +94,7 @@ public class DarwinCSV {
 		// For convenient, we load up all the field names which may be names
 		// into a list (so we can directly call list.contains(...) on them.
 		List<String> listFieldNamesForNames = Arrays.asList(fieldNamesForNames);
+		List<String> listFieldNamesForIDs = Arrays.asList(fieldNamesForIDs);
 		
 		// Store column names and classes.
 		List<String> columnNames = new ArrayList<String>();
@@ -108,6 +113,10 @@ public class DarwinCSV {
 			// If it's on the list of "name" field names, mark it as such.
 			if(listFieldNamesForNames.contains(column.toLowerCase()))
 				colClass = Name.class;
+			
+			// If it's on the list of "id" field names, mark it as such.
+			if(listFieldNamesForIDs.contains(column.toLowerCase()))
+				colClass = PrimaryKey.class;
 			
 			// Rename duplicate column names as "_01", "_02", etc.
 			int counter = 1;
@@ -164,9 +173,12 @@ public class DarwinCSV {
 					
 					// We can't index fields yet, because they need to be indexed
 					// against the entire row. Only RowIndex can do that!
+				} else if(PrimaryKey.class.isAssignableFrom(colClass)) {
+					value = new PrimaryKey(field);
 				}
 				
 				row[columnIndex] = value;
+				// System.err.println("Setting columnIndex " + columnIndex + " value to " + value.getClass());
 				
 				columnIndex++;
 			}
