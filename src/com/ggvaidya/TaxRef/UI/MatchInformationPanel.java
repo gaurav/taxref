@@ -275,6 +275,8 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 			if(acceptedname_col != -1)		acceptedName =   row[acceptedname_col].toString();
 			if(acceptednameid_col != -1) {
 				acceptedNameID = row[acceptednameid_col].toString();
+				
+				// TODO: actually look up this ID on $against and see what we have.
 			
 				// If we have an acceptedNameID and it's equal to either blank
 				// or matched_taxonid, then it's the same as the matched name.
