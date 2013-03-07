@@ -28,7 +28,7 @@ package com.ggvaidya.TaxRef.Model.Datatype;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class PrimaryKey {
+public final class PrimaryKey {
 	String textValue;
 	
 	public PrimaryKey(String str) {

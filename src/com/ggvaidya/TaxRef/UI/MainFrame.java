@@ -741,8 +741,8 @@ public class MainFrame implements TableCellRenderer {
 			c.setBackground(COLOR_FOCUS);	
 			return c;
 			
-		} else if(PrimaryKey.class.isAssignableFrom(value.getClass())) {
-			int rows = currentCSV.getRowIndex().getPrimaryKeyRows((PrimaryKey) value).size();
+		} else if(currentCSV != null && PrimaryKey.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(column))) {
+			int rows = currentCSV.getRowIndex().getPrimaryKeyRows((String) value).size();
 			if(rows > 1) {
 				c.setBackground(COLOR_PK_MULTIPLE);
 			} else {

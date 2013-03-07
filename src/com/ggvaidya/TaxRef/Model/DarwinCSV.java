@@ -174,7 +174,10 @@ public class DarwinCSV {
 					// We can't index fields yet, because they need to be indexed
 					// against the entire row. Only RowIndex can do that!
 				} else if(PrimaryKey.class.isAssignableFrom(colClass)) {
-					value = new PrimaryKey(field);
+					// Don't do ANYTHING -- that just takes up memory. We operate
+					// everything by special casing the heck out of this.
+					
+					// value = new PrimaryKey(field);
 				}
 				
 				row[columnIndex] = value;

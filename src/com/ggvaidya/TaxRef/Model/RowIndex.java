@@ -93,7 +93,7 @@ public class RowIndex implements TableModel {
 	private Map<Name, List<Object[]>> nameIndex = new HashMap<Name, List<Object[]>>();
 	
 	
-	private Map<PrimaryKey, List<Object[]>> pkIndex = new HashMap<PrimaryKey, List<Object[]>>();
+	private Map<String, List<Object[]>> pkIndex = new HashMap<String, List<Object[]>>();
 	
 	/**
 	 * @return A textual description of this object.
@@ -144,12 +144,13 @@ public class RowIndex implements TableModel {
 	 *    call.
 	 * 
 	 * @param obj The value to index.
+	 * @param colClass The class of this column.
 	 * @param row The row this value appears in. The index supports indexing multiple
 	 *		values for the same row and the same value in multiple rows, but not
 	 *		multiple values in the same row.
 	 * @return True if the value was indexed, false otherwise.
 	 */
-	public boolean indexValue(Object obj, Object[] row) {
+	public boolean indexValue(Object obj, Class colClass, Object[] row) {
 		if(obj == null)
 			return false;
 		
@@ -165,11 +166,11 @@ public class RowIndex implements TableModel {
 			
 			return true;
 			
-		} else if(PrimaryKey.class.isAssignableFrom(obj.getClass())) {
+		} else if(PrimaryKey.class.isAssignableFrom(colClass)) {
 			// Index primary keys.
-			PrimaryKey pk = (PrimaryKey) obj;
+			String pk = (String) obj;
 			
-			if(!pkIndex.containsKey(pkIndex))
+			if(!pkIndex.containsKey(pk))
 				pkIndex.put(pk, new ArrayList<Object[]>());
 			
 			pkIndex.get(pk).add(row);
@@ -218,6 +219,29 @@ public class RowIndex implements TableModel {
 		int colIndex = getColumnIndex(colName);
 		Constructor c = null;
 		
+		// Special case: switching column class for PrimaryKeys is ... weird.
+		if(PrimaryKey.class.isAssignableFrom(toClass)) {
+			// Clear the pk index.
+			pkIndex.clear();
+			
+			// Switch all other primary keys back to String.
+			for(String col: columnClasses.keySet()) {
+				if(PrimaryKey.class.isAssignableFrom(columnClasses.get(col))) {
+					columnClasses.put(col, String.class);
+				}
+			}
+			
+			// Reindex this column.
+			for(Object[] row: rows) {
+				indexValue(row[colIndex], PrimaryKey.class, row);
+			}
+			
+			// And set the column class.
+			setColumnClass(colName, toClass);
+			
+			return;
+		}
+		
 		if(!toClass.isAssignableFrom(String.class)) {
 			// If there's no such constructor, we'll throw NoSuchMethodException here,
 			// before we've touched the data.
@@ -239,7 +263,7 @@ public class RowIndex implements TableModel {
 			}
 			
 			// Index the newly class-switched value.
-			indexValue(row[colIndex], row);
+			indexValue(row[colIndex], toClass, row);
 		}
 		
 		// Calls the table listeners for us.
@@ -313,7 +337,9 @@ public class RowIndex implements TableModel {
 	public void createNewColumn(String newColumn, int insertAt, ArrayMapOperation mop) {
 		// Make the new column. 
 		columns.add(insertAt, newColumn);
-		columnsLowercase.add(insertAt, newColumn);
+		columnsLowercase.add(insertAt, newColumn.toLowerCase());
+		
+		Class colClass = getColumnClass(getColumnIndex(newColumn));
 				
 		// Iterate over all the rows, copying each row into the new one, 
 		// inserting the new object as we go.
@@ -329,7 +355,7 @@ public class RowIndex implements TableModel {
 			
 			System.arraycopy(row, 0, new_row, 0, insertAt);
 			Object toInsert = mop.mapTo(row);
-			indexValue(toInsert, row);
+			indexValue(toInsert, colClass, row);
 			new_row[insertAt] = toInsert;
 			System.arraycopy(row, insertAt, new_row, insertAt + 1, new_row.length - insertAt - 1);
 			
@@ -358,7 +384,7 @@ public class RowIndex implements TableModel {
 		
 		// O(n)
 		for(int x = 0; x < row.length; x++) {
-			indexValue(row[x], row);
+			indexValue(row[x], getColumnClass(x), row);
 		}
 	}
 	
@@ -552,7 +578,7 @@ public class RowIndex implements TableModel {
 		// Set the value and index it.
 		Object[] row = rows.get(rowIndex);
 		row[columnIndex] = aValue;
-		indexValue(aValue, row);
+		indexValue(aValue, getColumnClass(columnIndex), row);
 		
 		// Inform all the TableModelListeners of the change.
 		for(TableModelListener tml: listeners) {
@@ -575,7 +601,7 @@ public class RowIndex implements TableModel {
 		listeners.remove(l);
 	}
 
-	public List<Object[]> getPrimaryKeyRows(PrimaryKey pk) {
+	public List<Object[]> getPrimaryKeyRows(String pk) {
 		return pkIndex.get(pk);
 	}
 }
