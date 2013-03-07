@@ -133,6 +133,17 @@ public class MainFrame implements TableCellRenderer {
 			);
 		}
 	}
+
+	public RowIndex getDisplayedRowIndex() {
+		if(currentCSV == null)
+			return null;
+		else
+			return currentCSV.getRowIndex();
+	}
+
+	public RowIndexMatch getCurrentMatch() {
+		return currentMatch;
+	}
 	
 	/* CLASSES */
 	private class MainFrameWorker extends SwingWorker<Object, Object> {
@@ -650,6 +661,7 @@ public class MainFrame implements TableCellRenderer {
 		currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
 		table.repaint();
 		matchInfoPanel.matchChanged(currentMatch);
+		columnInfoPanel.matchChanged(currentMatch);
 		// long t2 = System.currentTimeMillis();
 		
 		// System.err.println("matchAgainst finished: " + (t2 - t1) + " ms");
