@@ -458,12 +458,20 @@ public class MainFrame implements TableCellRenderer {
 				matchAgainst(null);
 				
 				// SwingWorker MAGIC!
+				table.setEnabled(false);
 				new MainFrameWorker("matching against file '" + file + "'", file) {
 					@Override
 					protected Object doInBackground() throws Exception {
 						matchAgainst(new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED));
 						
 						return null;
+					}
+					
+					@Override
+					protected void done() {
+						super.done();
+						
+						table.setEnabled(true);
 					}
 				}.execute();
 			}
@@ -474,8 +482,10 @@ public class MainFrame implements TableCellRenderer {
 		JMenuItem miMatchITIS = new JMenuItem(new AbstractAction("Match against ITIS") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				table.setEnabled(false);
 				DarwinCSV csv = DownloadITIS.getIt(mainFrame);
 				matchAgainst(csv);
+				table.setEnabled(true);
 				table.repaint();
 			}
 		});
@@ -676,6 +686,7 @@ public class MainFrame implements TableCellRenderer {
 		
 		// Load up a new DarwinCSV and set current CSV.
 		try {
+			table.setEnabled(false);
 			setCurrentCSV(new DarwinCSV(file, type));
 
 		} catch(IOException ex) {
@@ -683,6 +694,8 @@ public class MainFrame implements TableCellRenderer {
 				"Could not read file '" + file + "'", 
 				"Unable to read file '" + file + "': " + ex
 			);
+		} finally {
+			table.setEnabled(true);
 		}
 		
 		// Set the main frame title, based on the filename and the index.
