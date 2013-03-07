@@ -225,11 +225,16 @@ public class MainFrame implements TableCellRenderer {
 				
 				columnInfoPanel.columnChanged(column);
 				
-				Object o = table.getModel().getValueAt(row, column);
-				if(Name.class.isAssignableFrom(o.getClass())) {
-					matchInfoPanel.nameSelected(currentCSV.getRowIndex(), (Name) o, row, column);
-				} else {
+				if(row == -1 || column == -1) {
+					// nothing selected?
 					matchInfoPanel.nameSelected(currentCSV.getRowIndex(), null, -1, -1);
+				} else {
+					Object o = table.getModel().getValueAt(row, column);
+					if(Name.class.isAssignableFrom(o.getClass())) {
+						matchInfoPanel.nameSelected(currentCSV.getRowIndex(), (Name) o, row, column);
+					} else {
+						matchInfoPanel.nameSelected(currentCSV.getRowIndex(), null, -1, -1);
+					}
 				}
 			}
 		});
