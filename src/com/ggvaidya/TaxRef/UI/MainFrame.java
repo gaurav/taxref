@@ -23,11 +23,11 @@
 package com.ggvaidya.TaxRef.UI;
 
 import com.ggvaidya.TaxRef.*;
+import com.ggvaidya.TaxRef.Common.*;
 import com.ggvaidya.TaxRef.Model.*;
 import com.ggvaidya.TaxRef.Model.Datatype.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
-import java.awt.List;
 import java.awt.datatransfer.*;
 import java.awt.dnd.*;
 import java.awt.event.*;
@@ -501,42 +501,29 @@ public class MainFrame implements TableCellRenderer {
 		treatTaxonIDsAs.add(miITIS_TSNs);
 		
 		/* TaxonID -> Create family column */
-		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create family column") {
+		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create duplicate column") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				/*
 				if(currentCSV == null)
 					return;
 				
-				if(currentMatch == null)
-					return;
-				
-				int col = getJTable().getSelectedColumn();
+				int col = table.getSelectedColumn();
 				if(col == -1)
 					return;
 				
 				RowIndex rowIndex = currentCSV.getRowIndex();
-				
 				String colName = rowIndex.getColumnName(col);
-				if(rowIndex.hasColumn(colName + "_family")) {
-					// TODO MessageBox
-					return;
-				}
 				
-				if(Name.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(col))) {
-					// A name class! Make a new column!
-					currentCSV.getRowIndex().setColumnClass(colName + "_family", String.class);
-					currentCSV.getRowIndex().createNewColumn(colName + "_family", col + 1, colName, new MapOperation() {
-						@Override
-						public Object mapTo(Object value) {
-							return "family";
-						}
-					});
-					
-					// Repaint the table.
-					getJTable().repaint();
-				}
-				*/
+				rowIndex.setColumnClass(colName + "_duplicate", String.class);
+				rowIndex.createNewColumn(colName + "_duplicate", col + 1, colName, new MapOperation() {
+					@Override
+					public Object mapTo(Object value) {
+						return value;
+					}
+				});
+				
+				System.err.println("Done, number of columns: " + rowIndex.getColumnCount());
+				table.repaint();
 			}
 		});
 		taxonIDMenu.add(miTaxonID_createFamily);
