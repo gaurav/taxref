@@ -191,6 +191,7 @@ public class ColumnInformationPanel extends JPanel implements ItemListener {
 	}
 	
 	public void matchChanged(RowIndexMatch match) {
+		list_add_column.removeItemListener(this);
 		list_add_column.removeAllItems();
 		
 		if(match == null) {
@@ -203,6 +204,7 @@ public class ColumnInformationPanel extends JPanel implements ItemListener {
 			list_add_column.setEnabled(true);
 		}
 		mainFrame.getMainFrame().pack();
+		list_add_column.addItemListener(this);
 	}
 
 	@Override
