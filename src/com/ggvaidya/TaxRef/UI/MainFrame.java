@@ -22,10 +22,10 @@
  */
 package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import com.ggvaidya.TaxRef.*;
-// import com.ggvaidya.TaxRef.Common.*;
+import com.ggvaidya.TaxRef.Common.*;
 import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import com.ggvaidya.TaxRef.Net.*;
 import java.awt.*;
 import java.awt.datatransfer.*;
@@ -35,7 +35,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import javax.swing.*;
-import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 
@@ -134,28 +133,37 @@ public class MainFrame implements TableCellRenderer {
 			);
 		}
 	}
+
+	public RowIndex getDisplayedRowIndex() {
+		if(currentCSV == null)
+			return null;
+		else
+			return currentCSV.getRowIndex();
+	}
+
+	public RowIndexMatch getCurrentMatch() {
+		return currentMatch;
+	}
 	
 	/* CLASSES */
-	private class MainFrameWorker extends SwingWorker<Object, Object> {
-		protected String task;
-		protected Object input;
+	
+	/** This class will load a file for you. */
+	private class DarwinCSVLoader extends SwingWorker<DarwinCSV, File> {
+		File file;
+		short darwinCSVFileType;
+		DarwinCSV result;
 		
-		public MainFrameWorker(String task) {
-			this.task = task;
+		public DarwinCSVLoader(File input, short darwinCSVFileType) {
+			file = input;
+			this.darwinCSVFileType = darwinCSVFileType;
 			
 			// Turn on indeterminate when initialized.
 			progressBar.setIndeterminate(true);
 		}
 		
-		public MainFrameWorker(String task, Object input) {
-			this(task);
-			this.input = input;
-		}
-		
 		@Override
-		protected Object doInBackground() throws Exception {
-			// Needs to be overridden.
-			throw new UnsupportedOperationException("Not supported yet.");
+		protected DarwinCSV doInBackground() throws Exception {
+			return new DarwinCSV(file, darwinCSVFileType);
 		}
 		
 		@Override
@@ -165,20 +173,34 @@ public class MainFrame implements TableCellRenderer {
 			
 			// Check for exceptions, and display them if necessary.
 			try {
-				get();
+				result = get();
 			} catch(Exception e) {
+				result = null;
+				
 				StringWriter stack_trace = new StringWriter();
 				e.printStackTrace(new PrintWriter(stack_trace));
 				
 				MessageBox.messageBox(
 					mainFrame, 
-					"Error while " + task, 
-					"The following error occurred while " + task + ": " + e.getMessage() + "\n\nStack trace: " + stack_trace, 
+					"Error while loading file '" + file + "'", 
+					"The following error occurred while loading '" + file + "': " + e.getMessage() + "\n\nStack trace: " + stack_trace, 
 					MessageBox.ERROR
 				);
 			}
 		}
+		
+		public DarwinCSV getDarwinCSV() {
+			return result;
+		}
 	};
+	
+	protected DarwinCSV loadDarwinCSV(File f, short darwinCSVtype) {
+		DarwinCSVLoader l = new DarwinCSVLoader(f, darwinCSVtype);		
+		l.run();
+		
+		// Might be null!
+		return l.getDarwinCSV();
+	}
 	
 	/**
 	 * Create a new, empty, not-visible TaxRef window. Really just activates 
@@ -215,11 +237,16 @@ public class MainFrame implements TableCellRenderer {
 				
 				columnInfoPanel.columnChanged(column);
 				
-				Object o = table.getModel().getValueAt(row, column);
-				if(Name.class.isAssignableFrom(o.getClass())) {
-					matchInfoPanel.nameSelected(currentCSV.getRowIndex(), (Name) o, row, column);
-				} else {
+				if(row == -1 || column == -1) {
+					// nothing selected?
 					matchInfoPanel.nameSelected(currentCSV.getRowIndex(), null, -1, -1);
+				} else {
+					Object o = table.getModel().getValueAt(row, column);
+					if(Name.class.isAssignableFrom(o.getClass())) {
+						matchInfoPanel.nameSelected(currentCSV.getRowIndex(), (Name) o, row, column);
+					} else {
+						matchInfoPanel.nameSelected(currentCSV.getRowIndex(), null, -1, -1);
+					}
 				}
 			}
 		});
@@ -283,7 +310,7 @@ public class MainFrame implements TableCellRenderer {
 						
 						// If we're given multiple files, pick up only the last file and load that.
 						File f = files.get(files.size() - 1);
-						loadFile(f, DarwinCSV.FILE_CSV_DELIMITED);
+						loadDarwinCSV(f, DarwinCSV.FILE_CSV_DELIMITED);
 						
 					} catch (UnsupportedFlavorException ex) {
 						dtde.dropComplete(false);
@@ -324,18 +351,9 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				// Clear out old file.
-				loadFile(null);
-				
-				// SwingWorker MAGIC!
-				new MainFrameWorker("loading file '" + file + "'", file) {
-					@Override
-					protected Object doInBackground() throws Exception {
-						System.err.println("Loading file: " + input);
-						loadFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
-						
-						return null;
-					}
-				}.execute();
+				setCurrentCSV(null);
+				DarwinCSV csv = loadDarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
+				setCurrentCSV(csv);
 			}
 		});
 		fileMenu.add(miFileOpenCSV);
@@ -357,9 +375,17 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				// Clear out old file
-				loadFile(null);
-				
-				loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+				setCurrentCSV(null);
+				try {
+					setCurrentCSV(new DarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED));
+				} catch(IOException exception) {
+					MessageBox.messageBox(
+						mainFrame, 
+						"Could not load from file '" + file + "'", 
+						"Error occured while loading from file '" + file + "': " + exception,
+						MessageBox.MB_ERROR
+					);
+				}
 			}
 		});
 		fileMenu.add(miFileOpenCSVnoUI);
@@ -381,17 +407,9 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				// Clear out old file
-				loadFile(null);
-				
-				// SwingWorker MAGIC!
-				new MainFrameWorker("loading file '" + file + "'", file) {
-					@Override
-					protected Object doInBackground() throws Exception {
-						loadFile((File)input, DarwinCSV.FILE_TAB_DELIMITED);
-						
-						return null;
-					}
-				}.execute();
+				setCurrentCSV(null);
+				DarwinCSV dcsv = loadDarwinCSV(file, DarwinCSV.FILE_TAB_DELIMITED);
+				setCurrentCSV(dcsv);
 			}
 		});
 		fileMenu.add(miFileOpenTab);
@@ -413,15 +431,24 @@ public class MainFrame implements TableCellRenderer {
 					return;
 				}
 				
-				// SwingWorker MAGIC!
-				new MainFrameWorker("saving CSV file '" + file + "'", file) {
-					@Override
-					protected Object doInBackground() throws Exception {
-						currentCSV.saveToFile((File)input, DarwinCSV.FILE_CSV_DELIMITED);
-						
-						return null;
-					}
-				}.execute();
+				try {
+					currentCSV.saveToFile(file, DarwinCSV.FILE_CSV_DELIMITED);
+					
+					MessageBox.messageBox(
+						mainFrame, 
+						"Saved successfully to '" + file + "'", 
+						currentCSV.getRowIndex().getRowCount() + " rows successfully saved as a CSV to '" + file + "'",
+						MessageBox.MB_OK
+					);
+					
+				} catch(IOException exception) {
+					MessageBox.messageBox(
+						mainFrame, 
+						"Could not save to file '" + file + "'", 
+						"Error occured to file '" + file + "': " + exception,
+						MessageBox.MB_ERROR
+					);
+				}
 			}
 		});
 		fileMenu.add(miFileSave);
@@ -456,17 +483,11 @@ public class MainFrame implements TableCellRenderer {
 				}
 				
 				// Clear out old match against.
+				table.setEnabled(false);
 				matchAgainst(null);
-				
-				// SwingWorker MAGIC!
-				new MainFrameWorker("matching against file '" + file + "'", file) {
-					@Override
-					protected Object doInBackground() throws Exception {
-						matchAgainst(new DarwinCSV((File)input, DarwinCSV.FILE_CSV_DELIMITED));
-						
-						return null;
-					}
-				}.execute();
+				DarwinCSV dsv = loadDarwinCSV(file, DarwinCSV.FILE_CSV_DELIMITED);
+				matchAgainst(dsv);
+				table.setEnabled(true);
 			}
 		});
 		matchMenu.add(miMatchCSV);
@@ -475,9 +496,11 @@ public class MainFrame implements TableCellRenderer {
 		JMenuItem miMatchITIS = new JMenuItem(new AbstractAction("Match against ITIS") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				table.setEnabled(false);
 				DarwinCSV csv = DownloadITIS.getIt(mainFrame);
 				matchAgainst(csv);
 				table.repaint();
+				table.setEnabled(true);
 			}
 		});
 		matchMenu.add(miMatchITIS);
@@ -502,42 +525,29 @@ public class MainFrame implements TableCellRenderer {
 		treatTaxonIDsAs.add(miITIS_TSNs);
 		
 		/* TaxonID -> Create family column */
-		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create family column") {
+		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create duplicate column") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				/*
 				if(currentCSV == null)
 					return;
 				
-				if(currentMatch == null)
-					return;
-				
-				int col = getJTable().getSelectedColumn();
+				int col = table.getSelectedColumn();
 				if(col == -1)
 					return;
 				
 				RowIndex rowIndex = currentCSV.getRowIndex();
-				
 				String colName = rowIndex.getColumnName(col);
-				if(rowIndex.hasColumn(colName + "_family")) {
-					// TODO MessageBox
-					return;
-				}
 				
-				if(Name.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(col))) {
-					// A name class! Make a new column!
-					currentCSV.getRowIndex().setColumnClass(colName + "_family", String.class);
-					currentCSV.getRowIndex().createNewColumn(colName + "_family", col + 1, colName, new MapOperation() {
-						@Override
-						public Object mapTo(Object value) {
-							return "family";
-						}
-					});
-					
-					// Repaint the table.
-					getJTable().repaint();
-				}
-				*/
+				rowIndex.setColumnClass(colName + "_duplicate", String.class);
+				rowIndex.createNewColumn(colName + "_duplicate", col + 1, colName, new MapOperation() {
+					@Override
+					public Object mapTo(Object value) {
+						return value;
+					}
+				});
+				
+				System.err.println("Done, number of columns: " + rowIndex.getColumnCount());
+				table.repaint();
 			}
 		});
 		taxonIDMenu.add(miTaxonID_createFamily);
@@ -602,12 +612,16 @@ public class MainFrame implements TableCellRenderer {
 	}
 	
 	/**
-	 * Set the current open DarwinCSV. You should really, really, really
-	 * setCurrentCSV(null) before you load a new DarwinCSV.
+	 * Set the current open DarwinCSV. You should set this to null before 
+	 * loading a new one to avoid running out of memory.
 	 * 
 	 * @param csv The new DarwinCSV object.
 	 */
 	private void setCurrentCSV(DarwinCSV csv) {
+		if(!SwingUtilities.isEventDispatchThread()) {
+			System.err.println("setCurrentCSV(" + csv + ") invoked from outside an event dispatch thread!");
+		}
+		
 		// Clear the old currentCSV object and matchAgainst object.
 		currentCSV = null;
 		matchAgainst(null);
@@ -616,15 +630,15 @@ public class MainFrame implements TableCellRenderer {
 		currentCSV = csv;
 		table.removeAll();
 		table.setDefaultRenderer(Name.class, this);
+		table.setDefaultRenderer(PrimaryKey.class, this);
 		
 		// Set the currentCSV 
-		// TODO: This causes an exception occasionally, because we shouldn't
-		// be calling setModel outside of the Event Queue thread; however, we're
-		// currently in a worker thread, so dipping back into the Event thread 
-		// would just cause more problems. Sorry!
 		if(csv != null) {
+			File file = csv.getFile();
+			mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
 			table.setModel(currentCSV.getRowIndex());
 		} else {
+			mainFrame.setTitle(basicTitle);
 			table.setModel(blankDataModel);
 		}
 		
@@ -639,67 +653,23 @@ public class MainFrame implements TableCellRenderer {
 	 * @param against The DarwinCSV object to match against.
 	 */
 	private void matchAgainst(DarwinCSV against) {
-		// System.err.println("matchAgainst: " + against);
-		
-		// Reset previous match information.
-		currentMatch = null;
-		table.repaint();
-		
-		// If all we're doing is a reset, we can get out now.
-		if(against == null)
+		if(currentCSV == null) {
+			currentMatch = null;
 			return;
+		}
+		
+		if(against == null) {
+			return;
+		}
 		
 		// long t1 = System.currentTimeMillis();
 		currentMatch = currentCSV.getRowIndex().matchAgainst(against.getRowIndex());
 		table.repaint();
 		matchInfoPanel.matchChanged(currentMatch);
+		columnInfoPanel.matchChanged(currentMatch);
 		// long t2 = System.currentTimeMillis();
 		
 		// System.err.println("matchAgainst finished: " + (t2 - t1) + " ms");
-	}
-	
-	/**
-	 * Helper function for loading a file without type information, just for
-	 * convenience. Right now, this just assumes it's CSV and moves it on.
-	 * 
-	 * @param file The file to load.
-	 */
-	private void loadFile(File file) {
-		// Eventually, this will be some code to figure out what kind of file
-		// it is. But for now ...
-		loadFile(file, DarwinCSV.FILE_CSV_DELIMITED);
-	}
-	
-	/**
-	 * Load a file of a particular type. It's a pretty standard helper function,
-	 * which uses DarwinCSV and setCurrentCSV(...) to make file loading happen
-	 * with messaging and whatnot. We can also reset the display: just call
-	 * loadFile(null).
-	 * 
-	 * @param file The file to load.
-	 * @param type The type of file (see DarwinCSV's constants).
-	 */
-	private void loadFile(File file, short type) {
-		// If the file was reset, reset the display and keep going.
-		if(file == null) {
-			mainFrame.setTitle(basicTitle);
-			setCurrentCSV(null);
-			return;
-		}
-		
-		// Load up a new DarwinCSV and set current CSV.
-		try {
-			setCurrentCSV(new DarwinCSV(file, type));
-
-		} catch(IOException ex) {
-			MessageBox.messageBox(mainFrame, 
-				"Could not read file '" + file + "'", 
-				"Unable to read file '" + file + "': " + ex
-			);
-		}
-		
-		// Set the main frame title, based on the filename and the index.
-		mainFrame.setTitle(basicTitle + ": " + file.getName() + " (" + String.format("%,d", currentCSV.getRowIndex().getRowCount()) + " rows)");
 	}
 	
 	/**
@@ -740,6 +710,14 @@ public class MainFrame implements TableCellRenderer {
 			// ANY cell with focus should look focussed.
 			c.setBackground(COLOR_FOCUS);	
 			return c;
+			
+		} else if(currentCSV != null && PrimaryKey.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(column))) {
+			int rows = currentCSV.getRowIndex().getPrimaryKeyRows((String) value).size();
+			if(rows > 1) {
+				c.setBackground(COLOR_PK_MULTIPLE);
+			} else {
+				c.setBackground(COLOR_PK_SINGLE);
+			}
 			
 		} else if(Name.class.isAssignableFrom(value.getClass())) {
 			// Aha, a Name! Color it special.
@@ -811,6 +789,10 @@ public class MainFrame implements TableCellRenderer {
 	/** A focused Name cell has its own, distinctive colour, so you know that you
 	 can edit it. Maybe? */
 	public static final Color COLOR_FOCUS = Color.RED;
+	
+	// PK: primary key, red: multiple matches, green: single match.
+	public static final Color COLOR_PK_MULTIPLE = Color.RED;
+	public static final Color COLOR_PK_SINGLE = Color.GREEN;
 
 	/** 
 	 * The colour of non-Name cells which have been selected. Note that selected

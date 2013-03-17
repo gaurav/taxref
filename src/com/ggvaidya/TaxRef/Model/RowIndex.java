@@ -23,8 +23,8 @@
 
 package com.ggvaidya.TaxRef.Model;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
 import com.ggvaidya.TaxRef.Common.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import java.lang.reflect.*;
 import java.util.*;
 import javax.swing.event.*;
@@ -92,6 +92,9 @@ public class RowIndex implements TableModel {
 	 */
 	private Map<Name, List<Object[]>> nameIndex = new HashMap<Name, List<Object[]>>();
 	
+	
+	private Map<String, List<Object[]>> pkIndex = new HashMap<String, List<Object[]>>();
+	
 	/**
 	 * @return A textual description of this object.
 	 */
@@ -141,12 +144,13 @@ public class RowIndex implements TableModel {
 	 *    call.
 	 * 
 	 * @param obj The value to index.
+	 * @param colClass The class of this column.
 	 * @param row The row this value appears in. The index supports indexing multiple
 	 *		values for the same row and the same value in multiple rows, but not
 	 *		multiple values in the same row.
 	 * @return True if the value was indexed, false otherwise.
 	 */
-	public boolean indexValue(Object obj, Object[] row) {
+	public boolean indexValue(Object obj, Class colClass, Object[] row) {
 		if(obj == null)
 			return false;
 		
@@ -162,9 +166,32 @@ public class RowIndex implements TableModel {
 			
 			return true;
 			
+		} else if(PrimaryKey.class.isAssignableFrom(colClass)) {
+			// Index primary keys.
+			String pk = (String) obj;
+			
+			if(!pkIndex.containsKey(pk))
+				pkIndex.put(pk, new ArrayList<Object[]>());
+			
+			pkIndex.get(pk).add(row);
+			
+			return true;
 		} else {
 			// Not a name? then no index for you.
 			return false;
+		}
+	}
+	
+	public void unindexValue(Object obj, Object[] row) {
+		// Delete value from all our indexes.
+		if(nameIndex.containsKey(obj)) {
+			List<Object[]> rows = nameIndex.get(obj);
+			rows.remove(row);
+		}
+		
+		if(pkIndex.containsKey(obj)) {
+			List<Object[]> rows = pkIndex.get(obj);
+			rows.remove(row);
 		}
 	}
 	
@@ -192,6 +219,29 @@ public class RowIndex implements TableModel {
 		int colIndex = getColumnIndex(colName);
 		Constructor c = null;
 		
+		// Special case: switching column class for PrimaryKeys is ... weird.
+		if(PrimaryKey.class.isAssignableFrom(toClass)) {
+			// Clear the pk index.
+			pkIndex.clear();
+			
+			// Switch all other primary keys back to String.
+			for(String col: columnClasses.keySet()) {
+				if(PrimaryKey.class.isAssignableFrom(columnClasses.get(col))) {
+					columnClasses.put(col, String.class);
+				}
+			}
+			
+			// Reindex this column.
+			for(Object[] row: rows) {
+				indexValue(row[colIndex], PrimaryKey.class, row);
+			}
+			
+			// And set the column class.
+			setColumnClass(colName, toClass);
+			
+			return;
+		}
+		
 		if(!toClass.isAssignableFrom(String.class)) {
 			// If there's no such constructor, we'll throw NoSuchMethodException here,
 			// before we've touched the data.
@@ -199,6 +249,9 @@ public class RowIndex implements TableModel {
 		}
 		
 		for(Object[] row: rows) {
+			// Unindex the previous value.
+			unindexValue(row[colIndex], row);
+			
 			try {
 				if(toClass.isAssignableFrom(String.class)) {
 					row[colIndex] = new String(row[colIndex].toString());
@@ -208,6 +261,9 @@ public class RowIndex implements TableModel {
 			} catch(Exception ex) {
 				throw new RuntimeException("Unable to convert from " + getColumnClass(colIndex) + " to " + toClass + ": " + ex);
 			}
+			
+			// Index the newly class-switched value.
+			indexValue(row[colIndex], toClass, row);
 		}
 		
 		// Calls the table listeners for us.
@@ -281,7 +337,9 @@ public class RowIndex implements TableModel {
 	public void createNewColumn(String newColumn, int insertAt, ArrayMapOperation mop) {
 		// Make the new column. 
 		columns.add(insertAt, newColumn);
-		columnsLowercase.add(insertAt, newColumn);
+		columnsLowercase.add(insertAt, newColumn.toLowerCase());
+		
+		Class colClass = getColumnClass(getColumnIndex(newColumn));
 				
 		// Iterate over all the rows, copying each row into the new one, 
 		// inserting the new object as we go.
@@ -297,7 +355,7 @@ public class RowIndex implements TableModel {
 			
 			System.arraycopy(row, 0, new_row, 0, insertAt);
 			Object toInsert = mop.mapTo(row);
-			indexValue(toInsert, row);
+			indexValue(toInsert, colClass, row);
 			new_row[insertAt] = toInsert;
 			System.arraycopy(row, insertAt, new_row, insertAt + 1, new_row.length - insertAt - 1);
 			
@@ -307,7 +365,7 @@ public class RowIndex implements TableModel {
 		rows = new_rows;
 		 
 		for(TableModelListener l: listeners) {
-			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.HEADER_ROW));
+			l.tableChanged(new TableModelEvent(this, TableModelEvent.HEADER_ROW));
 			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
 		}
 	}
@@ -326,7 +384,7 @@ public class RowIndex implements TableModel {
 		
 		// O(n)
 		for(int x = 0; x < row.length; x++) {
-			indexValue(row[x], row);
+			indexValue(row[x], getColumnClass(x), row);
 		}
 	}
 	
@@ -504,11 +562,7 @@ public class RowIndex implements TableModel {
 		
 		// Delete the previous value from the index.
 		Object prevValue = getValueAt(rowIndex, columnIndex);
-		if(Name.class.isAssignableFrom(prevValue.getClass())) {
-			Name prevName = (Name) prevValue;
-			Object[] row = rows.get(rowIndex);
-			nameIndex.get(prevName).remove(row);
-		}
+		unindexValue(prevValue, getRows().get(rowIndex));
 		
 		// Special case: if the aValue is a String (like if the user entered a
 		// new name), but the column is a Name column, then automatically create
@@ -524,7 +578,7 @@ public class RowIndex implements TableModel {
 		// Set the value and index it.
 		Object[] row = rows.get(rowIndex);
 		row[columnIndex] = aValue;
-		indexValue(aValue, row);
+		indexValue(aValue, getColumnClass(columnIndex), row);
 		
 		// Inform all the TableModelListeners of the change.
 		for(TableModelListener tml: listeners) {
@@ -545,5 +599,9 @@ public class RowIndex implements TableModel {
 	@Override
 	public void removeTableModelListener(TableModelListener l) {
 		listeners.remove(l);
+	}
+
+	public List<Object[]> getPrimaryKeyRows(String pk) {
+		return pkIndex.get(pk);
 	}
 }

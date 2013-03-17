@@ -23,14 +23,11 @@
 
 package com.ggvaidya.TaxRef.UI;
 
-import com.ggvaidya.TaxRef.Model.Datatype.Name;
-import com.ggvaidya.TaxRef.Common.*;
+import com.ggvaidya.TaxRef.Common.ArrayMapOperation;
 import com.ggvaidya.TaxRef.Model.*;
+import com.ggvaidya.TaxRef.Model.Datatype.*;
 import java.awt.*;
-import java.util.*;
 import java.awt.event.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.border.*;
 
@@ -42,10 +39,11 @@ import javax.swing.border.*;
  * 
  * @author Gaurav Vaidya <gaurav@ggvaidya.com>
  */
-public class ColumnInformationPanel extends JPanel implements ActionListener, ItemListener {
+public class ColumnInformationPanel extends JPanel implements ItemListener {
 	private MainFrame mainFrame;
 	private JComboBox list_columns;
 	private JComboBox list_treat_as;
+	private JComboBox list_add_column;
 	private JPanel panel_commands;
 	private DarwinCSV currentCSV;
 	private int currentCol = -1;
@@ -112,10 +110,17 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 		list_treat_as.setEditable(false);
 		list_treat_as.addItem("Treat column as text");
 		list_treat_as.addItem("Treat column as scientific name");
+		list_treat_as.addItem("Treat column as primary key");
 		list_treat_as.addItemListener(this);
 		
-		panel_commands.setLayout(new GridLayout(1, 1));
+		list_add_column = new JComboBox();
+		list_add_column.setEditable(false);
+		list_add_column.addItem("Add column ...");
+		list_add_column.addItemListener(this);
+		
+		panel_commands.setLayout(new GridLayout(2, 1));
 		panel_commands.add(list_treat_as);
+		panel_commands.add(list_add_column);
 
 		JPanel middle = new JPanel();
 		middle.add(panel_commands, BorderLayout.NORTH);
@@ -166,11 +171,17 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 		RowIndex rowIndex = currentCSV.getRowIndex();
 		
 		// list_treat_as
-		if(rowIndex.getColumnClass(currentCol).isAssignableFrom(Name.class)) {
+		Class colClass = rowIndex.getColumnClass(currentCol);
+		if(colClass.isAssignableFrom(Name.class)) {
 			list_treat_as.setSelectedIndex(1);
+		} else if(colClass.isAssignableFrom(PrimaryKey.class)) {
+			list_treat_as.setSelectedIndex(2);
 		} else {
 			list_treat_as.setSelectedIndex(0);
 		}
+		
+		// list_add_column
+		// TODO: Disable for non-Name columns.
 	}
 
 	private void activateCommandsPanel(boolean enabledState) {
@@ -178,32 +189,22 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 			comp.setEnabled(enabledState);
 		}
 	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if(currentCSV == null || currentCol == -1) {
-			// Nothing selected, do nothing.
+	
+	public void matchChanged(RowIndexMatch match) {
+		list_add_column.removeItemListener(this);
+		list_add_column.removeAllItems();
+		
+		if(match == null) {
+			list_add_column.addItem("Add columns based on matched data");
+			list_add_column.setEnabled(false);
 		} else {
-			RowIndex rowIndex = currentCSV.getRowIndex();
-			
-			String colName = rowIndex.getColumnName(currentCol);
-			
-			if(e.getSource().equals(list_treat_as)) {
-				Class treatAsClass = String.class;
-				
-				switch(list_treat_as.getSelectedIndex()) {
-					case 0:
-						treatAsClass = String.class;
-						break;
-					case 1:
-						treatAsClass = Name.class;
-				}
-				
-				System.err.println("Setting class on " + colName + " to " + treatAsClass);
-				rowIndex.setColumnClass(colName, treatAsClass);
+			for(String colName: match.getAgainst().getColumnNames()) {
+				list_add_column.addItem("Add column based on '" + colName + "'");
 			}
-			
+			list_add_column.setEnabled(true);
 		}
+		mainFrame.getMainFrame().pack();
+		list_add_column.addItemListener(this);
 	}
 
 	@Override
@@ -225,6 +226,10 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 						break;
 					case 1:
 						treatAsClass = Name.class;
+						break;
+					case 2:
+						treatAsClass = PrimaryKey.class;
+						break;
 				}
 				
 				if(originalClass == treatAsClass)
@@ -239,6 +244,62 @@ public class ColumnInformationPanel extends JPanel implements ActionListener, It
 					columnChanged(currentCol);
 				}
 				mainFrame.getJTable().repaint();
+			} else if(e.getSource().equals(list_add_column)) {
+				int colToInsert = list_add_column.getSelectedIndex();
+				if(colToInsert < 0)
+					return;
+				
+				// Name classes only, please!
+				if(!Name.class.isAssignableFrom(currentCSV.getRowIndex().getColumnClass(currentCol)))
+					return;
+				
+				RowIndexMatch match = mainFrame.getCurrentMatch();
+				if(match == null) return;
+				
+				RowIndex against = match.getAgainst();
+				if(against == null) return;
+				
+				String newColName = "matched_" + rowIndex.getColumnName(currentCol) + "_to_" + against.getColumnName(colToInsert);
+				
+				class Joiner implements ArrayMapOperation {
+					int fromCol;
+					RowIndex against;
+					int againstCol;
+					
+					public Joiner(int fromCol, RowIndex against, int againstCol) {
+						this.fromCol = fromCol;
+						this.against = against;
+						this.againstCol = againstCol;
+					}
+					
+					@Override
+					public Object mapTo(Object[] values) {
+						Name name = (Name) values[fromCol];
+						
+						if(against.hasName(name)) {
+							java.util.List<Object[]> rows = against.getNameRows(name);
+							
+							if(rows.size() > 1)
+								return "(multiple)";
+							else {
+								Object[] row = rows.get(0);
+								
+								// System.err.println("Going for againstCol of " + againstCol + " but we only have " + row.length + " lengths.");
+								Object val = row[againstCol];
+								
+								if(val == null)
+									return "(null)";
+								else
+									return val;
+							}
+						} else {
+							return "(not matched)";
+						}
+					}
+				};
+				
+				rowIndex.setColumnClass(newColName, String.class);
+				rowIndex.createNewColumn(newColName, currentCol + 1, new Joiner(currentCol, against, colToInsert));
 			}
 		}
 	}
