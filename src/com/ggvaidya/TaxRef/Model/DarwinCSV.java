@@ -302,6 +302,10 @@ public class DarwinCSV {
 		return index;
 	}
 	
+	public File getFile() {
+		return file;
+	}
+	
 	/**
 	 * A short description of this object.
 	 * 
