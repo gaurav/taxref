@@ -356,12 +356,10 @@ public class MatchInformationPanel extends JPanel implements ActionListener, Foc
 	@Override
 	public void tableChanged(TableModelEvent e) {
 		// If the currently selected value changes, redisplay it.
-		System.err.println("Table changed! (" + e.getColumn() + ", " + e.getFirstRow() + " to " + e.getLastRow() + "), I am at (" + currentCol + ", " + currentCol + ")");
+		System.err.println("Table changed! (" + e.getColumn() + ", " + e.getFirstRow() + " to " + e.getLastRow() + "), I am at (" + currentCol + ", " + currentRow + ")");
 		if(e.getColumn() == currentCol && e.getFirstRow() >= currentRow && e.getLastRow() <= currentRow) {
 			nameSelected(from, (Name)from.getValueAt(currentRow, currentCol), currentRow, currentCol);
 		}
 	}
-
-
 
 }
