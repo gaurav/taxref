@@ -284,7 +284,7 @@ public class ColumnInformationPanel extends JPanel implements ItemListener {
 							else {
 								Object[] row = rows.get(0);
 								
-								System.err.println("Going for againstCol of " + againstCol + " but we only have " + row.length + " lengths.");
+								// System.err.println("Going for againstCol of " + againstCol + " but we only have " + row.length + " lengths.");
 								Object val = row[againstCol];
 								
 								if(val == null)
