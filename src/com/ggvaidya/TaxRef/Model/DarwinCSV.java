@@ -283,7 +283,11 @@ public class DarwinCSV {
 			
 			int x = 0;
 			for(Object o: row) {
-				strings[x] = o.toString();
+				if(o == null)
+					strings[x] = null;
+				else
+					strings[x] = o.toString();
+				
 				x++;
 			}
 			

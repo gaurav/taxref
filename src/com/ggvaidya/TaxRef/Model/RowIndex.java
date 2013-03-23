@@ -210,9 +210,7 @@ public class RowIndex implements TableModel {
 	public void setColumnClass(String colName, Class colClass) {
 		columnClasses.put(colName.toLowerCase(), colClass);
 		
-		for(TableModelListener l: listeners) {
-			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
-		}
+		sendTableModelEvent(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
 	}
 	
 	public void changeColumnClass(String colName, Class toClass) throws NoSuchMethodException {
@@ -291,6 +289,20 @@ public class RowIndex implements TableModel {
 	}
 	
 	/**
+	 * Creates a new column. Do remember to set a class for your column
+	 * beforehand.
+	 */
+	public void createNewColumn(String newColumn) {
+		createNewColumn(newColumn, getColumnCount(), new ArrayMapOperation() {
+
+			@Override
+			public Object mapTo(Object[] values) {
+				return null;
+			}
+		});
+	}
+	
+	/**
 	 * Creates a new column based on an existing column's data. This ended up
 	 * being a special case of ArrayMapOperation.
 	 * 
@@ -363,11 +375,9 @@ public class RowIndex implements TableModel {
 		}
 		
 		rows = new_rows;
-		 
-		for(TableModelListener l: listeners) {
-			l.tableChanged(new TableModelEvent(this, TableModelEvent.HEADER_ROW));
-			l.tableChanged(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
-		}
+		
+		sendTableModelEvent(new TableModelEvent(this, TableModelEvent.HEADER_ROW));
+		sendTableModelEvent(new TableModelEvent(this, 0, rows.size(), TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE));
 	}
 	
 	/**
@@ -581,9 +591,7 @@ public class RowIndex implements TableModel {
 		indexValue(aValue, getColumnClass(columnIndex), row);
 		
 		// Inform all the TableModelListeners of the change.
-		for(TableModelListener tml: listeners) {
-			tml.tableChanged(new TableModelEvent(this, rowIndex, rowIndex, columnIndex));
-		}
+		sendTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, columnIndex));
 	}
 	
 	/** Our private list of TableModelListeners. */
@@ -603,5 +611,40 @@ public class RowIndex implements TableModel {
 
 	public List<Object[]> getPrimaryKeyRows(String pk) {
 		return pkIndex.get(pk);
+	}
+
+	public Object[] getRow(int index) {
+		return rows.get(index);
+	}
+	
+	private boolean silenced = false;
+	private List<TableModelEvent> tmevents_queue = new ArrayList<TableModelEvent>();
+	
+	public void sendTableModelEvent(TableModelEvent e) {
+		if(silenced) {
+			if(!tmevents_queue.contains(e)) {
+				tmevents_queue.add(e);
+			}
+			return;
+		}
+		for(TableModelListener tml: listeners) {
+			tml.tableChanged(e);
+		}
+	}
+
+	public void silenceListeners() {
+		synchronized(this) {
+			silenced = true;
+		}
+	}
+	
+	public void unsilenceListeners() {
+		synchronized(this) {
+			silenced = false;
+			for(TableModelEvent e: tmevents_queue) {
+				sendTableModelEvent(e);
+			}
+			tmevents_queue.clear();
+		}
 	}
 }

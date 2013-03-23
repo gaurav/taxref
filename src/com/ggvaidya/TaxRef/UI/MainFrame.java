@@ -414,7 +414,6 @@ public class MainFrame implements TableCellRenderer {
 		});
 		fileMenu.add(miFileOpenTab);
 		
-		
 		/* File -> Save CSV */
 		JMenuItem miFileSave = new JMenuItem(new AbstractAction("Save as CSV") {
 			@Override
@@ -524,8 +523,8 @@ public class MainFrame implements TableCellRenderer {
 		miITIS_TSNs.setSelected(true);
 		treatTaxonIDsAs.add(miITIS_TSNs);
 		
-		/* TaxonID -> Create family column */
-		JMenuItem miTaxonID_createFamily = new JMenuItem(new AbstractAction("Create duplicate column") {
+		/* TaxonID -> Duplicate column */
+		JMenuItem miTaxonID_duplicateColumn = new JMenuItem(new AbstractAction("Duplicate current column") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if(currentCSV == null)
@@ -550,7 +549,126 @@ public class MainFrame implements TableCellRenderer {
 				table.repaint();
 			}
 		});
-		taxonIDMenu.add(miTaxonID_createFamily);
+		taxonIDMenu.add(miTaxonID_duplicateColumn);
+		
+		/* TaxonID -> Unroll parentNameUsageId column */
+		JMenuItem miTaxonID_unrollParentNameUsageId = new JMenuItem(new AbstractAction("Recursively unroll IDs via primary key") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(currentCSV == null)
+					return;
+				
+				int col = table.getSelectedColumn();
+				if(col == -1)
+					return;
+				
+				RowIndex rowIndex = currentCSV.getRowIndex();
+				// String colName = rowIndex.getColumnName(col);
+				int col_to_recurse = col;
+				
+				// TODO: replace this with a dialog box.
+				int col_for_colname = rowIndex.getColumnIndex("taxonRank");
+				int col_for_value = rowIndex.getColumnIndex("scientificName");
+				
+				// Let's go.
+				rowIndex.silenceListeners();
+				table.setEnabled(false);
+				progressBar.setIndeterminate(true);
+				
+				/*
+				class Unroller extends SwingWorker<String, Integer> {
+					RowIndex rowIndex;
+					String colName;
+					int col_to_recurse;
+					int col_for_colname;
+					int col_for_value;
+					
+					private Unroller(RowIndex r, int c, int col_colname, int col_value) {
+						rowIndex = r;
+						col_to_recurse = c;
+						col_for_colname = col_colname;
+						col_for_value = col_value;
+					}
+					
+					@Override
+					protected String doInBackground() throws Exception {*/
+						rowIndex.setColumnClass("rc:status", String.class);
+						rowIndex.createNewColumn("rc:status");
+						int rc_status_index = rowIndex.getColumnIndex("rc:status");
+						
+						for(int row_index = 0; row_index < rowIndex.getRowCount(); row_index++) {
+							Object[] row = rowIndex.getRow(row_index);
+							Object value = row[col_to_recurse];
+							
+							while(!(value == null || value.equals(""))) {
+								// Add this value to the table.
+								Object putative_colName = row[col_for_colname];
+								if(putative_colName == null) {
+									rowIndex.setValueAt("Stopped at #" + value + ": no column name", row_index, rc_status_index);
+									break;
+								}
+								String colName = putative_colName.toString();
+								
+								if(!rowIndex.hasColumn("rc:" + colName)) {
+									rowIndex.setColumnClass("rc:" + colName, 
+										rowIndex.getColumnClass(col_for_value)
+									);
+									rowIndex.createNewColumn("rc:" + colName);
+								}
+								
+								int col_new_col = rowIndex.getColumnIndex("rc:" + colName);
+								
+								// System.err.println("Setting (row: " + row_index + ", col: " + col_new_col + ") to '" + value + "'");
+								Object putative_value = row[col_for_value];
+								Object set_value;
+								
+								if(putative_value == null)
+									set_value = value;
+								else
+									set_value = putative_value;
+								
+								rowIndex.setValueAt(set_value, row_index, col_new_col);
+								
+								// Keep recursin'
+								java.util.List<Object[]> rows = rowIndex.getPrimaryKeyRows(value.toString());
+								if(rows == null || rows.isEmpty())
+									break;
+								
+								if(rows.size() > 1) {
+									rowIndex.setValueAt("Multiple values found for #" + value.toString(), row_index, rc_status_index);
+									break;
+								}
+								
+								Object new_value = rows.get(0)[col_to_recurse];
+								if(new_value == value) {
+									rowIndex.setValueAt("", row_index, rc_status_index);
+									break;
+								}
+								
+								// System.err.println("Recursing to '" + new_value + "'");
+								value = new_value;
+							}
+						}
+						/*
+						return "";
+					}
+					
+					@Override
+					protected void done() {*/
+						rowIndex.unsilenceListeners();
+						table.setEnabled(true);
+						progressBar.setIndeterminate(false);
+						
+						MessageBox.messageBox(mainFrame, "Done!", "Unrolled!");
+					/*}
+				}
+				
+				Unroller unroller = new Unroller(rowIndex, col, col_for_colname, col_for_value);
+				unroller.run();
+				*/
+			}
+		});
+		taxonIDMenu.add(miTaxonID_unrollParentNameUsageId);
 		
 		/* Help */
 		JMenu helpMenu = new JMenu("Help");
